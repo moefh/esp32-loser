@@ -71,12 +71,17 @@ struct SPRITE {
 };
 
 struct GAME_DATA {
-  int screen_x;
-  int screen_y;
+  int camera_x;
+  int camera_y;
 };
 
 struct CHAR_DEF {
-  unsigned char clip[4];
+  struct {
+    unsigned char x;
+    unsigned char y;
+    unsigned char width;
+    unsigned char height;
+  } clip;
   unsigned int mirror;
   unsigned int shoot_frame;
   unsigned int num_stand;

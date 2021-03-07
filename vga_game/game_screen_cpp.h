@@ -1,6 +1,14 @@
+/*
+ * This should be a CPP file, but <ESP32Lib.h> causes linking errors if
+ * included in two different CPP files (it includes (VGA14BitI.h> which
+ * contains global functions).
+ * 
+ * As a hack, we #include it as a header file from the main file (INO),
+ * which is the other file that must #include <ESP32Lib.h>
+ */
 
-#include "game_data.h"
 #include "game_screen.h"
+#include "game_data.h"
 
 #pragma GCC optimize ("-O3")
 
@@ -375,17 +383,20 @@ void GameScreen::clearScreen(unsigned char color) {
   }
 }
 
-void GameScreen::limitScreenPos() {
-  if (game_data->screen_x < 0) {
-    game_data->screen_x = 0;
-  } else if (game_data->screen_x >= game_map.width*TILE_WIDTH - xres) {
-    game_data->screen_x = game_map.width*TILE_WIDTH - xres - 1;
+void GameScreen::setScreenPos() {
+  screen_x = game_data->camera_x - xres/2;
+  screen_y = game_data->camera_y - yres/2;
+
+  if (screen_x < 0) {
+    screen_x = 0;
+  } else if (screen_x >= game_map.width*TILE_WIDTH - xres) {
+    screen_x = game_map.width*TILE_WIDTH - xres - 1;
   }
 
-  if (game_data->screen_y < 0) {
-    game_data->screen_y = 0;
-  } else if (game_data->screen_y >= game_map.height*TILE_HEIGHT - yres) {
-    game_data->screen_y = game_map.height*TILE_HEIGHT - yres - 1;
+  if (screen_y < 0) {
+    screen_y = 0;
+  } else if (screen_y >= game_map.height*TILE_HEIGHT - yres) {
+    screen_y = game_map.height*TILE_HEIGHT - yres - 1;
   }
 }
 
@@ -409,17 +420,15 @@ void GameScreen::setSprites(int num_sprites, SPRITE *sprites) {
 }
 
 void GameScreen::renderScreen() {
-  game_data->screen_x = (sprites[0].x-sprites[0].def->width/2 ) - xres/2;
-  game_data->screen_y = (sprites[0].y-sprites[0].def->height/2) - yres/2;
-  limitScreenPos();
+  setScreenPos();
 
-  int tile_x_first = game_data->screen_x/TILE_WIDTH;
-  int tile_x_last = (game_data->screen_x+xres)/TILE_WIDTH;
-  int tile_y_first = game_data->screen_y/TILE_HEIGHT;
-  int tile_y_last = (game_data->screen_y+yres)/TILE_HEIGHT;
+  int tile_x_first = screen_x/TILE_WIDTH;
+  int tile_x_last = (screen_x+xres)/TILE_WIDTH;
+  int tile_y_first = screen_y/TILE_HEIGHT;
+  int tile_y_last = (screen_y+yres)/TILE_HEIGHT;
 
-  int x_pos_start = -(game_data->screen_x%TILE_WIDTH);
-  int y_pos_start = -(game_data->screen_y%TILE_HEIGHT);
+  int x_pos_start = -(screen_x%TILE_WIDTH);
+  int y_pos_start = -(screen_y%TILE_HEIGHT);
 
   int y_pos;
 
@@ -440,8 +449,8 @@ void GameScreen::renderScreen() {
 
   // sprites
   for (int i = 0; i < num_sprites; i++) {
-    int spr_x = sprites[i].x - game_data->screen_x;
-    int spr_y = sprites[i].y - game_data->screen_y;
+    int spr_x = sprites[i].x - screen_x;
+    int spr_y = sprites[i].y - screen_y;
     if (spr_x <= -sprites[i].def->width) continue;
     if (spr_y <= -sprites[i].def->height) continue;
     if (spr_x >= xres || spr_y >= yres) continue;
@@ -466,7 +475,7 @@ void GameScreen::renderScreen() {
 
 void GameScreen::show(int cur_millis) {
   if (imagesSBitsOk) {
-    clearScreen(0x30);
+    //clearScreen(0x30);
     renderScreen();
   } else {
     clearScreen(0x30);
@@ -483,6 +492,6 @@ void GameScreen::show(int cur_millis) {
 
   setCursor(10, 10); print("x"); setCursor(30, 10); print(sprites[0].x);
   setCursor(10, 20); print("y"); setCursor(30, 20); print(sprites[0].y);
-  
+
   VGA6Bit::show();
 }

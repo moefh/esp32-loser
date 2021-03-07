@@ -1,6 +1,11 @@
 #ifndef GAME_SCREEN_H_FILE
 #define GAME_SCREEN_H_FILE
 
+/**
+ * The GameScreen class handles the game screen. It derives from
+ * ESP32Lib's VGA6Bit and writes directly to the framebuffer.
+ */
+
 #include <ESP32Lib.h>
 #include <Ressources/Font6x8.h>
 
@@ -26,6 +31,8 @@ private:
   int num_sprites;
   SPRITE *sprites;
   GAME_DATA *game_data;
+  int screen_x;
+  int screen_y;
   
 protected:
   
@@ -58,7 +65,7 @@ public:
 
   void clearScreen(unsigned char color);
   void drawSprite(const SPRITE_DEF *def, int spr_x, int spr_y, int frame, bool transparent);
-  void limitScreenPos();
+  void setScreenPos();
   void show(int cur_millis);
 };
 

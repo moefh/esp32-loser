@@ -4,16 +4,30 @@
 
 #include "game_screen_cpp.h"
 
-#define JOY_A 13
-#define JOY_B 12
-#define JOY_C 14
-#define JOY_D 27
-#define JOY_E 26
-#define JOY_F 25
-#define JOY_X 33
-#define JOY_Y 32
+// Joystick input pins (for Arduino joystick shield)
+#define PIN_JOY_A      13
+#define PIN_JOY_B      12
+#define PIN_JOY_C      14
+#define PIN_JOY_D      27
+#define PIN_JOY_E      26
+#define PIN_JOY_F      25
+#define PIN_JOY_X      33
+#define PIN_JOY_Y      32
 
-const PinConfig pinConfig(-1, -1, -1, 21, 22, -1, -1, -1, 18, 19, -1, -1, 4, 5, 23, 15, -1);
+// VGA output pins
+#define PIN_RED_LOW    21
+#define PIN_RED_HIGH   22
+#define PIN_GREEN_LOW  18
+#define PIN_GREEN_HIGH 19
+#define PIN_BLUE_LOW   4
+#define PIN_BLUE_HIGH  5
+#define PIN_HSYNC      23
+#define PIN_VSYNC      15
+
+const PinConfig pinConfig(-1, -1, -1, PIN_RED_LOW,   PIN_RED_HIGH,
+                          -1, -1, -1, PIN_GREEN_LOW, PIN_GREEN_HIGH,
+                              -1, -1, PIN_BLUE_LOW,  PIN_BLUE_HIGH,
+                          PIN_HSYNC, PIN_VSYNC, -1);
 
 GameScreen screen;
 GameControl control;
@@ -24,14 +38,10 @@ void setup()
   Serial.begin(115200);
   Serial.println("Starting...");
   
-  joystick.init(JOY_A, JOY_B, JOY_C, JOY_D, JOY_E, JOY_F, JOY_X, JOY_Y);
-  control.setData(&game_data);
-  control.setSprites(game_num_sprites, game_sprites);
+  joystick.init(PIN_JOY_A, PIN_JOY_B, PIN_JOY_C, PIN_JOY_D, PIN_JOY_E, PIN_JOY_F, PIN_JOY_X, PIN_JOY_Y);
   control.init();
 
-  delay(3000);
   screen.setFrameBufferCount(2);
-  //vga.init(vga.MODE320x200, pinConfig);
   screen.init(screen.MODE320x240, pinConfig);
   screen.setFont(Font6x8);
   screen.setData(&game_data);
