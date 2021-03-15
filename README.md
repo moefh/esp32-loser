@@ -3,7 +3,9 @@
 This is an old game, [Loser Corps](https://github.com/moefh/loser-corps),
 ported to the [ESP32](https://www.espressif.com/en/products/socs/esp32) microcontroller
 using bitluni's [ESP32Lib](https://github.com/bitluni/ESP32Lib) to output the game
-screen to a VGA monitor.
+screen to a VGA monitor. It supports the Wiimote controller using takeru's
+[Wiimote](https://github.com/takeru/Wiimote) library, but can also use a simple
+Arduino joystick shield.
 
 Click the image to see the video on Youtube:
 
