@@ -1,10 +1,9 @@
 #include "game_data.h"
 #include "game_control.h"
+#include "game_screen.h"
 #include "game_joy.h"
 #include "game_wiimote.h"
 #include "game_arduino_joy.h"
-
-#include "game_screen_cpp.h"
 
 #define USE_WIIMOTE  1  /* 1=use wiimote via bluetooth, 0=use arduino joystick shield */
 
@@ -28,10 +27,16 @@
 #define PIN_HSYNC      23
 #define PIN_VSYNC      15
 
-const PinConfig pinConfig(-1, -1, -1, PIN_RED_LOW,   PIN_RED_HIGH,
-                          -1, -1, -1, PIN_GREEN_LOW, PIN_GREEN_HIGH,
-                          -1, -1,     PIN_BLUE_LOW,  PIN_BLUE_HIGH,
-                          PIN_HSYNC, PIN_VSYNC, -1);
+static const int pin_config[] = {
+  PIN_RED_LOW,
+  PIN_RED_HIGH,
+  PIN_GREEN_LOW,
+  PIN_GREEN_HIGH,
+  PIN_BLUE_LOW,
+  PIN_BLUE_HIGH,
+  PIN_HSYNC,
+  PIN_VSYNC
+};
 
 GameScreen screen;
 GameControl control;
@@ -50,9 +55,7 @@ void setup()
   joystick.init();
   control.init();
 
-  screen.setFrameBufferCount(2);
-  screen.init(screen.MODE320x240, pinConfig);
-  screen.setFont(Font6x8);
+  screen.init(pin_config);
   screen.setData(&game_data);
   screen.setSprites(game_num_sprites, game_sprites);
   screen.clear();

@@ -2,12 +2,9 @@
 #define GAME_SCREEN_H_FILE
 
 /**
- * The GameScreen class handles the game screen. It derives from
- * ESP32Lib's VGA6Bit and writes directly to the framebuffer.
+ * The GameScreen class handles the game screen. It writes directly to
+ * vga_6bit's freamebuffer.
  */
-
-#include <ESP32Lib.h>
-#include <Ressources/Font6x8.h>
 
 #include "game_data.h"
 
@@ -22,11 +19,13 @@
 #define GET_4PIX_TRANSP_MASK(block) (GET_PIX0_TRANSP_MASK(block) | GET_PIX1_TRANSP_MASK(block) | \
                                      GET_PIX2_TRANSP_MASK(block) | GET_PIX3_TRANSP_MASK(block))
 
-class GameScreen : public VGA6Bit {
+class GameScreen {
 private:
   int last_millis = 0;
-  float last_fps = 0;
-  bool imagesSBitsOk = false;
+  int last_fps = 0;
+  int fps_frame_count = 0;
+  bool images_sbits_ok = false;
+  unsigned char sync_bits;
 
   int num_sprites;
   SPRITE *sprites;
@@ -36,7 +35,7 @@ private:
   
 protected:
   
-  float fpsCounter(int cur_millis);
+  int fpsCounter(int cur_millis);
 
   void drawImageLine0(unsigned int *screen, const unsigned int *image, int image_width);
   void drawImageLine1(unsigned int *screen, const unsigned int *image, int image_width, bool skip_first_block);
@@ -52,18 +51,19 @@ protected:
   
 public:
 
-  void setImagesSBitsOk(bool ok) { imagesSBitsOk = ok; }
-  bool getImagesSBitsOk(bool ok) { return imagesSBitsOk; }
-  unsigned char getSBits() { return SBits; }
+  void init(const int *pin_config);
+  void setImagesSBitsOk(bool ok) { images_sbits_ok = ok; }
+  bool getImagesSBitsOk(bool ok) { return images_sbits_ok; }
+  unsigned char getSBits() { return sync_bits; }
 
   bool checkImageSBits(const unsigned int *image_data) {
-    return (SBits == (image_data[0]&0xc0));
+    return (sync_bits == (image_data[0]&0xc0));
   }
 
   void setSprites(int num_sprites, SPRITE *sprites);
   void setData(GAME_DATA *d) { game_data = d; }
 
-  void clearScreen(unsigned char color);
+  void clear(unsigned char color = 0);
   void drawSprite(const SPRITE_DEF *def, int spr_x, int spr_y, int frame, bool transparent);
   void setScreenPos();
   void show(int cur_millis);
