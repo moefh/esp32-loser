@@ -5,6 +5,9 @@
 #include "game_joy.h"
 #include "Arduino.h"
 
+#define ARDUINO_JOY_DEADZONE_X  2048
+#define ARDUINO_JOY_DEADZONE_Y  2048
+
 class GameArduinoJoy : public GameJoy {
 protected:
   int pin_a;
@@ -41,15 +44,18 @@ public:
   }
 
   virtual void update() {
-    cur_a = digitalRead(pin_a);
-    cur_b = digitalRead(pin_b);
-    cur_c = digitalRead(pin_c);
-    cur_d = digitalRead(pin_d);
-    cur_e = digitalRead(pin_e);
-    cur_f = digitalRead(pin_f);
-
-    cur_x = analogRead(pin_x);
-    cur_y = analogRead(pin_y);
+    int x = analogRead(pin_x);
+    int y = analogRead(pin_y);
+    cur = ((digitalRead(pin_a) ? 0 : JOY_BTN_A) |
+           (digitalRead(pin_b) ? 0 : JOY_BTN_B) |
+           (digitalRead(pin_c) ? 0 : JOY_BTN_C) |
+           (digitalRead(pin_d) ? 0 : JOY_BTN_D) |
+           (digitalRead(pin_e) ? 0 : JOY_BTN_E) |
+           (digitalRead(pin_f) ? 0 : JOY_BTN_F) |
+           ((x < 2048 - ARDUINO_JOY_DEADZONE_X/2) ? JOY_BTN_LEFT  : 0) |
+           ((x > 2048 + ARDUINO_JOY_DEADZONE_X/2) ? JOY_BTN_RIGHT : 0) |
+           ((y < 2048 - ARDUINO_JOY_DEADZONE_Y/2) ? JOY_BTN_DOWN  : 0) |
+           ((y > 2048 + ARDUINO_JOY_DEADZONE_Y/2) ? JOY_BTN_UP    : 0));
   }
 
 };

@@ -3,7 +3,7 @@
 #include "game_joy.h"
 
 #define CAMERA_TETHER_X  40
-#define CAMERA_TETHER_Y  40
+#define CAMERA_TETHER_Y  60
 
 void GameControl::screenFollowCharacter(GameCharacter &c)
 {
@@ -24,7 +24,7 @@ void GameControl::step(int cur_millis, GameJoy &joy)
   last_step_millis = cur_millis;
   
   player.control(joy);
-  player.move(joy);
+  player.move();
   joy.ack();
 
   player.calcSpriteState();

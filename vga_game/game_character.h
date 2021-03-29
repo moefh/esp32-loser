@@ -17,10 +17,10 @@ protected:
   int frame_delay;
 
   void decreaseHorizontalSpeed(int amount);
-  void controlStand(int mdx, int jump, int last_jump);
-  void controlWalk(int mdx, int jump, int last_jump);
-  void controlJumpStart(int mdx, int jump, int last_jump);
-  void controlJumpEnd(int mdx, int jump, int last_jump);
+  void controlStand(int joy_dx, int jump, int last_jump);
+  void controlWalk(int joy_dx, int jump, int last_jump);
+  void controlJumpStart(int joy_dx, int jump, int last_jump);
+  void controlJumpEnd(int joy_dx, int jump, int last_jump);
 
 public:
   enum {
@@ -51,7 +51,7 @@ public:
 
   void calcSpriteState();
   void control(GameJoy &joy);
-  void move(GameJoy &joy);
+  void move();
 };
 
 #endif /* GAME_CHARACTER_H_FILE */

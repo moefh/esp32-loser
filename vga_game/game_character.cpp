@@ -10,7 +10,7 @@
 #define INC_JUMP_SPEED   0x0000a000
 
 #define MAX_WALK_SPEED   0x00070000
-#define DEC_WALK_SPEED   0x00008000
+#define DEC_WALK_SPEED   0x0000b000
 
 void GameCharacter::calcSpriteState()
 {
@@ -48,31 +48,31 @@ void GameCharacter::decreaseHorizontalSpeed(int amount)
   }
 }
 
-void GameCharacter::controlStand(int mdx, int jump, int last_jump)
+void GameCharacter::controlStand(int joy_dx, int jump, int last_jump)
 {
   if (jump && ! last_jump) {
     state = STATE_JUMP_START;
     dy = -START_JUMP_SPEED;
     frame = 0;
-  } else if (mdx != 0) {
+  } else if (joy_dx != 0) {
     state = STATE_WALK;
     frame = 0;
   }
 }
 
-void GameCharacter::controlWalk(int mdx, int jump, int last_jump)
+void GameCharacter::controlWalk(int joy_dx, int jump, int last_jump)
 {
   if (jump && ! last_jump) {
     state = STATE_JUMP_START;
     dy = -START_JUMP_SPEED;
     frame = 0;
-  } else if (mdx == 0) {
+  } else if (joy_dx == 0) {
     state = STATE_STAND;
     frame = 0;
   }
 }
 
-void GameCharacter::controlJumpStart(int mdx, int jump, int last_jump) {
+void GameCharacter::controlJumpStart(int joy_dx, int jump, int last_jump) {
   if (jump) {
     dy -= INC_JUMP_SPEED;
   } else {
@@ -81,20 +81,19 @@ void GameCharacter::controlJumpStart(int mdx, int jump, int last_jump) {
   }
 }
 
-void GameCharacter::controlJumpEnd(int mdx, int jump, int last_jump) {
+void GameCharacter::controlJumpEnd(int joy_dx, int jump, int last_jump) {
   // nothing to do
 }
 
 void GameCharacter::control(GameJoy &joy) {
-  int mdx =  (joy.cur_x - 2048) / 200;
-  if (mdx < -2) mdx += 2; else if (mdx > 2) mdx -= 2; else mdx = 0;
-  int jump = ! joy.cur_c;
-  int last_jump = ! joy.last_c;
+  int joy_dx = (joy.cur & JOY_BTN_LEFT) ? -1 : (joy.cur & JOY_BTN_RIGHT) ? 1 : 0;
+  int jump = joy.cur & JOY_BTN_C;
+  int last_jump = joy.last & JOY_BTN_C;
 
-  if (mdx > 0) {
+  if (joy_dx > 0) {
     dx += 2*DEC_WALK_SPEED;
     dir = DIR_RIGHT;
-  } else if (mdx < 0) {
+  } else if (joy_dx < 0) {
     dx -= 2*DEC_WALK_SPEED;
     dir = DIR_LEFT;
   }
@@ -102,14 +101,14 @@ void GameCharacter::control(GameJoy &joy) {
   if (dx >  MAX_WALK_SPEED) dx =  MAX_WALK_SPEED;
 
   switch (state) {
-  case STATE_STAND:      controlStand    (mdx, jump, last_jump); break;
-  case STATE_WALK:       controlWalk     (mdx, jump, last_jump); break;
-  case STATE_JUMP_START: controlJumpStart(mdx, jump, last_jump); break;
-  case STATE_JUMP_END:   controlJumpEnd  (mdx, jump, last_jump); break;
+  case STATE_STAND:      controlStand    (joy_dx, jump, last_jump); break;
+  case STATE_WALK:       controlWalk     (joy_dx, jump, last_jump); break;
+  case STATE_JUMP_START: controlJumpStart(joy_dx, jump, last_jump); break;
+  case STATE_JUMP_END:   controlJumpEnd  (joy_dx, jump, last_jump); break;
   }
 }
 
-void GameCharacter::move(GameJoy &joy)
+void GameCharacter::move()
 {
   int mdx, mdy;
   if (state == STATE_STAND || state == STATE_WALK) {
@@ -129,11 +128,13 @@ void GameCharacter::move(GameJoy &joy)
   int flags = calc_movement(x, y, def->clip.width, def->clip.height, dx/0x10000, dy/0x10000, &mdx, &mdy);
   if (flags & CM_Y_CLIPPED) {
     if (dy > 0) {      /* Hit the ground */
-      state = (joy.cur_x < 1000 || joy.cur_x > 3000) ? STATE_WALK : STATE_STAND;
+      //state = (joy.cur & (JOY_BTN_LEFT|JOY_BTN_RIGHT)) ? STATE_WALK : STATE_STAND;
+      state = STATE_WALK;
       dy = 0;
       frame = 0;
     } else {           /* Hit the ceiling */
-      dy = -dy;
+      //dy = -dy;
+      dy = 0;
       state = STATE_JUMP_END;
     }
   }
