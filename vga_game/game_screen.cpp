@@ -7,13 +7,12 @@
 #include "font.h"
 #include "font6x8.h"
 
-#define xres 320
-#define yres 240
-
 #pragma GCC optimize ("-O3")
 
-void GameScreen::init(const int *pin_config) {
-  vga_init(pin_config);
+void GameScreen::init(const int *pin_config, bool low_res_mode) {
+  vga_init(pin_config, (low_res_mode) ? vga_mode_240x240 : vga_mode_320x240);
+  screen_w  = vga_get_xres();
+  screen_h  = vga_get_yres();
   sync_bits = vga_get_sync_bits();
 }
 
@@ -341,7 +340,7 @@ void GameScreen::drawSprite(const SPRITE_DEF *def, int spr_x, int spr_y, int fra
     height += spr_y;
     spr_y = 0;
   }
-  if (height > yres - spr_y) height = yres - spr_y;
+  if (height > screen_h - spr_y) height = screen_h - spr_y;
   if (height <= 0) return;
 
   bool skip_first_block = false;
@@ -352,7 +351,7 @@ void GameScreen::drawSprite(const SPRITE_DEF *def, int spr_x, int spr_y, int fra
     spr_x = ((unsigned int) spr_x) % 4;
     skip_first_block = true;
   }
-  if (width > xres - spr_x) width = xres - spr_x;
+  if (width > screen_w - spr_x) width = screen_w - spr_x;
   if (width <= 0) return;
 
   unsigned char **framebuffer = vga_get_framebuffer();
@@ -376,19 +375,19 @@ void GameScreen::drawSprite(const SPRITE_DEF *def, int spr_x, int spr_y, int fra
 }
 
 void GameScreen::setScreenPos() {
-  screen_x = game_data->camera_x - xres/2;
-  screen_y = game_data->camera_y - yres/2;
+  screen_x = game_data->camera_x - screen_w/2;
+  screen_y = game_data->camera_y - screen_h/2;
 
   if (screen_x < 0) {
     screen_x = 0;
-  } else if (screen_x >= game_map.width*TILE_WIDTH - xres) {
-    screen_x = game_map.width*TILE_WIDTH - xres - 1;
+  } else if (screen_x >= game_map.width*TILE_WIDTH - screen_w) {
+    screen_x = game_map.width*TILE_WIDTH - screen_w - 1;
   }
 
   if (screen_y < 0) {
     screen_y = 0;
-  } else if (screen_y >= game_map.height*TILE_HEIGHT - yres) {
-    screen_y = game_map.height*TILE_HEIGHT - yres - 1;
+  } else if (screen_y >= game_map.height*TILE_HEIGHT - screen_h) {
+    screen_y = game_map.height*TILE_HEIGHT - screen_h - 1;
   }
 }
 
@@ -415,9 +414,9 @@ void GameScreen::renderScreen() {
   setScreenPos();
 
   int tile_x_first = screen_x/TILE_WIDTH;
-  int tile_x_last = (screen_x+xres)/TILE_WIDTH;
+  int tile_x_last = (screen_x+screen_w)/TILE_WIDTH;
   int tile_y_first = screen_y/TILE_HEIGHT;
-  int tile_y_last = (screen_y+yres)/TILE_HEIGHT;
+  int tile_y_last = (screen_y+screen_h)/TILE_HEIGHT;
 
   int x_pos_start = -(screen_x%TILE_WIDTH);
   int y_pos_start = -(screen_y%TILE_HEIGHT);
@@ -445,7 +444,7 @@ void GameScreen::renderScreen() {
     int spr_y = sprites[i].y - screen_y;
     if (spr_x <= -sprites[i].def->width) continue;
     if (spr_y <= -sprites[i].def->height) continue;
-    if (spr_x >= xres || spr_y >= yres) continue;
+    if (spr_x >= screen_w || spr_y >= screen_h) continue;
     drawSprite(sprites[i].def, spr_x, spr_y, sprites[i].frame, true);
   }
 
@@ -470,24 +469,26 @@ void GameScreen::clear(unsigned char color) {
 }
 
 void GameScreen::show(int cur_millis) {
+  FONT_SCREEN fs = { screen_w, screen_h, sync_bits, vga_get_framebuffer() };
+  
   if (images_sbits_ok) {
     renderScreen();
   } else {
     clear(0x30);
-    draw_text(vga_get_framebuffer(), vga_get_sync_bits(), font6x8, 10, 40, 0x3f, "Image data doesn't match");
-    draw_text(vga_get_framebuffer(), vga_get_sync_bits(), font6x8, 10, 50, 0x3f, "VGA mode sync bits");
-    draw_text(vga_get_framebuffer(), vga_get_sync_bits(), font6x8, 10, 60, 0x3f, (int) sync_bits);
+    draw_text(fs, font6x8, 10, 40, 0x3f, "Image data doesn't match");
+    draw_text(fs, font6x8, 10, 50, 0x3f, "VGA mode sync bits");
+    draw_text(fs, font6x8, 10, 60, 0x3f, (int) sync_bits);
   }
 
   int fps = fpsCounter(cur_millis);
   last_millis = cur_millis;
-  draw_text(vga_get_framebuffer(), vga_get_sync_bits(), font6x8, 250, 10, 0x3f, "fps:");
-  draw_text(vga_get_framebuffer(), vga_get_sync_bits(), font6x8, 280, 10, 0x3f, fps);
+  draw_text(fs, font6x8, screen_w-70, screen_h-20, 0x3f, "fps:");
+  draw_text(fs, font6x8, screen_w-40, screen_h-20, 0x3f, fps);
 
-  draw_text(vga_get_framebuffer(), vga_get_sync_bits(), font6x8, 10, 10, 0x3f, "x");
-  draw_text(vga_get_framebuffer(), vga_get_sync_bits(), font6x8, 30, 10, 0x3f, sprites[0].x);
-  draw_text(vga_get_framebuffer(), vga_get_sync_bits(), font6x8, 10, 20, 0x3f, "y");
-  draw_text(vga_get_framebuffer(), vga_get_sync_bits(), font6x8, 30, 20, 0x3f, sprites[0].y);
+  draw_text(fs, font6x8, 10, screen_h-30, 0x3f, "x");
+  draw_text(fs, font6x8, 30, screen_h-30, 0x3f, sprites[0].x);
+  draw_text(fs, font6x8, 10, screen_h-20, 0x3f, "y");
+  draw_text(fs, font6x8, 30, screen_h-20, 0x3f, sprites[0].y);
   
   vga_swap_buffers();
 }

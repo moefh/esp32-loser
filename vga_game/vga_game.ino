@@ -1,4 +1,5 @@
 #include "game_data.h"
+#include "game_network.h"
 #include "game_control.h"
 #include "game_screen.h"
 #include "game_joy.h"
@@ -6,6 +7,9 @@
 #include "game_arduino_joy.h"
 
 #define USE_WIIMOTE  1  /* 1=use wiimote via bluetooth, 0=use arduino joystick shield */
+
+// Configuration pins
+#define PIN_ENABLE_NETWORK 27
 
 // Joystick input pins (for Arduino joystick shield)
 #define PIN_JOY_A      13
@@ -40,6 +44,7 @@ static const int pin_config[] = {
 
 GameScreen screen;
 GameControl control;
+GameNetwork network;
 
 #if USE_WIIMOTE
 GameWiimote joystick;
@@ -49,13 +54,22 @@ GameArduinoJoy joystick(PIN_JOY_A, PIN_JOY_B, PIN_JOY_C, PIN_JOY_D, PIN_JOY_E, P
 
 void setup()
 {
+  pinMode(PIN_ENABLE_NETWORK, INPUT_PULLUP);
+  
   Serial.begin(115200);
   Serial.println("Starting...");
-  
+
+  delay(1000);
+  bool enable_network = digitalRead(PIN_ENABLE_NETWORK);
+  Serial.printf("pin %d reads %d\n", PIN_ENABLE_NETWORK, digitalRead(PIN_ENABLE_NETWORK));
+    
   joystick.init();
   control.init();
+  if (enable_network) {
+    network.init(&game_sprites[0], &game_sprites[1]);
+  }
 
-  screen.init(pin_config);
+  screen.init(pin_config, enable_network);
   screen.setData(&game_data);
   screen.setSprites(game_num_sprites, game_sprites);
   screen.clear();
@@ -66,5 +80,6 @@ void loop()
   int cur_millis = millis();
   joystick.update();
   control.step(cur_millis, joystick);
+  network.step();
   screen.show(cur_millis);
 }

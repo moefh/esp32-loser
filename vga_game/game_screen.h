@@ -32,6 +32,8 @@ private:
   GAME_DATA *game_data;
   int screen_x;
   int screen_y;
+  int screen_w;
+  int screen_h;
   
 protected:
   
@@ -51,7 +53,7 @@ protected:
   
 public:
 
-  void init(const int *pin_config);
+  void init(const int *pin_config, bool low_res_mode);
   void setImagesSBitsOk(bool ok) { images_sbits_ok = ok; }
   bool getImagesSBitsOk(bool ok) { return images_sbits_ok; }
   unsigned char getSBits() { return sync_bits; }

@@ -8,9 +8,7 @@
 #include "spr_castle3.h"
 #include "spr_loserboy.h"
 #include "spr_punkman.h"
-#include "spr_stickman.h"
 #include "spr_powerup.h"
-#include "spr_blacknight.h"
 
 GAME_DATA game_data;
 
@@ -19,18 +17,15 @@ const SPRITE_DEF game_sprite_defs[] = {
   ADD_SPRITE_DEF(castle3),
   ADD_SPRITE_DEF(loserboy),
   ADD_SPRITE_DEF(punkman),
-  ADD_SPRITE_DEF(stickman),
-  ADD_SPRITE_DEF(blacknight),
   ADD_SPRITE_DEF(powerup),
 };
 const int game_num_sprite_defs = (int) (sizeof(game_sprite_defs)/sizeof(*game_sprite_defs));
 
 SPRITE game_sprites[] = {
-  { &game_sprite_defs[1],  64,  64,  0, },   // loserboy
+  { &game_sprite_defs[1],  64,  64,  0, },   // loserboy (player)
+  { &game_sprite_defs[1], -64, -64,  0, },   // loserboy (network)
   { &game_sprite_defs[2], 384, 512,  0, },   // punkman
-  { &game_sprite_defs[3], 248, 142, 12, },   // stickman
-  { &game_sprite_defs[4], 448,  70,  6, },   // blacknight
-  { &game_sprite_defs[5], 204,  10,  0, },   // powerup
+  { &game_sprite_defs[3], 204,  10,  0, },   // powerup
 };
 const int game_num_sprites = (int) (sizeof(game_sprites)/sizeof(*game_sprites));
 

@@ -12,8 +12,15 @@ typedef struct {
   const uint8_t *data;
 } FONT;
 
-void draw_text(uint8_t **framebuffer, uint8_t sync_bits, const FONT &font, unsigned int x, unsigned int y, uint8_t color, int num);
-void draw_text(uint8_t **framebuffer, uint8_t sync_bits, const FONT &font, unsigned int x, unsigned int y, uint8_t color, float num);
-void draw_text(uint8_t **framebuffer, uint8_t sync_bits, const FONT &font, unsigned int x, unsigned int y, uint8_t color, const char *text);
+typedef struct {
+  int x_res;
+  int y_res;
+  uint8_t sync_bits;
+  uint8_t **framebuffer;
+} FONT_SCREEN;
+
+void draw_text(const FONT_SCREEN &screen, const FONT &font, unsigned int x, unsigned int y, uint8_t color, int num);
+void draw_text(const FONT_SCREEN &screen, const FONT &font, unsigned int x, unsigned int y, uint8_t color, float num);
+void draw_text(const FONT_SCREEN &screen, const FONT &font, unsigned int x, unsigned int y, uint8_t color, const char *text);
 
 #endif /* VGA_FONT_H_FILE */

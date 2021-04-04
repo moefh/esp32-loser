@@ -52,6 +52,7 @@ public:
   void calcSpriteState();
   void control(GameJoy &joy);
   void move();
+  
 };
 
 #endif /* GAME_CHARACTER_H_FILE */

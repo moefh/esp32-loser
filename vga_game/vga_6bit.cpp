@@ -76,28 +76,45 @@
 
 #include "vga_6bit.h"
 
-// VGA mode constants (320x240)
-static const int h_front     = 8;
-static const int h_sync      = 48;
-static const int h_back      = 24;
-static const int h_pixels    = 320;
-static const int v_front     = 11;
-static const int v_sync      = 2;
-static const int v_back      = 31;
-static const int v_pixels    = 480;
-static const int v_div       = 2;
-static const int pixel_clock = 12587500;
-static const int h_polarity  = 1;
-static const int v_polarity  = 1;
+class VgaMode {
+public:
+  int h_front;
+  int h_sync;
+  int h_back;
+  int h_pixels;
+  int v_front;
+  int v_sync;
+  int v_back;
+  int v_pixels;
+  int v_div;
+  int pixel_clock;
+  int h_polarity;
+  int v_polarity;
 
-static const uint8_t vsync_inv_bit = v_polarity<<7;
-static const uint8_t hsync_inv_bit = h_polarity<<6;
-static const uint8_t vsync_bit = (1-v_polarity)<<7;
-static const uint8_t hsync_bit = (1-h_polarity)<<6;
-static const int sync_bits = vsync_inv_bit | hsync_inv_bit;
+  VgaMode(int hf, int hs, int hb, int hpix,
+          int vf, int vs, int vb, int vpix,
+          int vdiv, int pixclock, int vp, int hp)
+    : h_front(hf), h_sync(hs), h_back(hb), h_pixels(hpix),
+      v_front(vf), v_sync(vs), v_back(vb), v_pixels(vpix),
+      v_div(vdiv), pixel_clock(pixclock),
+      h_polarity(hp), v_polarity(vp) {
+  }
+  
+  uint8_t vsync_inv_bit() const { return v_polarity<<7; }
+  uint8_t hsync_inv_bit() const { return h_polarity<<6; }
+  uint8_t vsync_bit() const { return (1-v_polarity)<<7; }
+  uint8_t hsync_bit() const { return (1-h_polarity)<<6; }
+  uint8_t sync_bits() const { return vsync_inv_bit() | hsync_inv_bit(); }
+  int x_res() const { return h_pixels; }
+  int y_res() const { return v_pixels / v_div; }
+  
+};
 
-static const int x_res = h_pixels;
-static const int y_res = v_pixels / v_div;
+// --------------------------- hf  hs  hb  hpix  vf  vs  vb  vpix  vdiv pixclock  vp hp
+const VgaMode vga_mode_320x240(8,  48, 24, 320,  11, 2,  31, 480,  2,   12587500, 1, 1);
+const VgaMode vga_mode_288x240(24, 48, 40, 288,  11, 2,  31, 480,  2,   12587500, 1, 1);
+const VgaMode vga_mode_240x240(48, 48, 64, 240,  11, 2,  31, 480,  2,   12587500, 1, 1);
+
 
 /*
  * We use 2 DMA buffer descriptors per VGA line, their buffers are:
@@ -134,12 +151,16 @@ static uint8_t *dma_buf_vblank_vnorm;       // blank pixel data, outside vsync
 static uint8_t *dma_buf_vblank_vsync;       // blank pixel data, inside vsync
 
 // DMA buffers for pixels (framebuffers)
+static int num_framebuffers;                // number of framebuffers (1 or 2, user-selected)
 static int active_framebuffer;              // index of current active (display) framebuffer
 static int back_framebuffer;                // index of current back (drawing) framebuffer
 static uint8_t **framebuffer[2];            // framebuffer (pixel data + sync bits)
 
+// interrupt handler stuff
 static intr_handle_t i2s_isr_handle;        // I2S interrupt handler (triggered at end of frame)
 static volatile int DRAM_ATTR vga_frame_count = 0;    // incremented by I2S interrupt handler
+
+static const VgaMode *vga_mode;
 
 
 /*
@@ -213,11 +234,11 @@ static void set_dma_buf_desc_buffer(lldesc_t *buf_desc, uint8_t *buffer, int len
 static void allocate_vga_i2s_buffers()
 {
   // prepare DMA buffers for hblank/vblank areas
-  int hblank_len = (h_front + h_sync + h_back + 3) & 0xfffffffc;
+  int hblank_len = (vga_mode->h_front + vga_mode->h_sync + vga_mode->h_back + 3) & 0xfffffffc;
   dma_buf_hblank_vnorm = (uint8_t *) heap_caps_malloc(hblank_len, MALLOC_CAP_DMA);
   dma_buf_hblank_vsync = (uint8_t *) heap_caps_malloc(hblank_len, MALLOC_CAP_DMA);
-  dma_buf_vblank_vnorm = (uint8_t *) heap_caps_malloc((h_pixels+3) & 0xfffffffc, MALLOC_CAP_DMA);
-  dma_buf_vblank_vsync = (uint8_t *) heap_caps_malloc((h_pixels+3) & 0xfffffffc, MALLOC_CAP_DMA);
+  dma_buf_vblank_vnorm = (uint8_t *) heap_caps_malloc((vga_mode->h_pixels+3) & 0xfffffffc, MALLOC_CAP_DMA);
+  dma_buf_vblank_vsync = (uint8_t *) heap_caps_malloc((vga_mode->h_pixels+3) & 0xfffffffc, MALLOC_CAP_DMA);
 
   check_alloc(dma_buf_hblank_vnorm, "not enough DMA memory for I2S buffers");
   check_alloc(dma_buf_hblank_vsync, "not enough DMA memory for I2S buffers");
@@ -225,21 +246,21 @@ static void allocate_vga_i2s_buffers()
   check_alloc(dma_buf_vblank_vsync, "not enough DMA memory for I2S buffers");
 
   for (int i = 0; i < hblank_len; i++) {
-    if (i < h_front || i >= h_front+h_sync) {
-      dma_buf_hblank_vnorm[i^2] = hsync_inv_bit | vsync_inv_bit;
-      dma_buf_hblank_vsync[i^2] = hsync_inv_bit | vsync_bit;
+    if (i < vga_mode->h_front || i >= vga_mode->h_front+vga_mode->h_sync) {
+      dma_buf_hblank_vnorm[i^2] = vga_mode->hsync_inv_bit() | vga_mode->vsync_inv_bit();
+      dma_buf_hblank_vsync[i^2] = vga_mode->hsync_inv_bit() | vga_mode->vsync_bit();
     } else {
-      dma_buf_hblank_vnorm[i^2] = hsync_bit | vsync_inv_bit;
-      dma_buf_hblank_vsync[i^2] = hsync_bit | vsync_bit;
+      dma_buf_hblank_vnorm[i^2] = vga_mode->hsync_bit() | vga_mode->vsync_inv_bit();
+      dma_buf_hblank_vsync[i^2] = vga_mode->hsync_bit() | vga_mode->vsync_bit();
     }
   }
-  for (int i = 0; i < h_pixels; i++) {
-    dma_buf_vblank_vnorm[i^2] = hsync_inv_bit | vsync_inv_bit;
-    dma_buf_vblank_vsync[i^2] = hsync_inv_bit | vsync_bit;
+  for (int i = 0; i < vga_mode->h_pixels; i++) {
+    dma_buf_vblank_vnorm[i^2] = vga_mode->hsync_inv_bit() | vga_mode->vsync_inv_bit();
+    dma_buf_vblank_vsync[i^2] = vga_mode->hsync_inv_bit() | vga_mode->vsync_bit();
   }
 
   // allocate DMA buffer descriptors
-  dma_buf_desc_count = 2 * (v_front + v_sync + v_back + v_pixels);
+  dma_buf_desc_count = 2 * (vga_mode->v_front + vga_mode->v_sync + vga_mode->v_back + vga_mode->v_pixels);
   dma_buf_desc = alloc_dma_buf_desc_array(dma_buf_desc_count);
   check_alloc(dma_buf_desc, "not enough memory for DMA buffer descriptors");
   for (int i = 0; i < dma_buf_desc_count; i++) {
@@ -249,21 +270,21 @@ static void allocate_vga_i2s_buffers()
 
   // stitch together the DMA buffers to compose a full VGA frame
   int d = 0;
-  for (int i = 0; i < v_front; i++) {
+  for (int i = 0; i < vga_mode->v_front; i++) {
     set_dma_buf_desc_buffer(&dma_buf_desc[d++], dma_buf_hblank_vnorm, hblank_len);
-    set_dma_buf_desc_buffer(&dma_buf_desc[d++], dma_buf_vblank_vnorm, h_pixels);
+    set_dma_buf_desc_buffer(&dma_buf_desc[d++], dma_buf_vblank_vnorm, vga_mode->h_pixels);
   }
-  for (int i = 0; i < v_sync; i++) {
+  for (int i = 0; i < vga_mode->v_sync; i++) {
     set_dma_buf_desc_buffer(&dma_buf_desc[d++], dma_buf_hblank_vsync, hblank_len);
-    set_dma_buf_desc_buffer(&dma_buf_desc[d++], dma_buf_vblank_vsync, h_pixels);
+    set_dma_buf_desc_buffer(&dma_buf_desc[d++], dma_buf_vblank_vsync, vga_mode->h_pixels);
   }
-  for (int i = 0; i < v_back; i++) {
+  for (int i = 0; i < vga_mode->v_back; i++) {
     set_dma_buf_desc_buffer(&dma_buf_desc[d++], dma_buf_hblank_vnorm, hblank_len);
-    set_dma_buf_desc_buffer(&dma_buf_desc[d++], dma_buf_vblank_vnorm, h_pixels);
+    set_dma_buf_desc_buffer(&dma_buf_desc[d++], dma_buf_vblank_vnorm, vga_mode->h_pixels);
   }
-  for (int i = 0; i < v_pixels; i++) {
+  for (int i = 0; i < vga_mode->v_pixels; i++) {
     set_dma_buf_desc_buffer(&dma_buf_desc[d++], dma_buf_hblank_vnorm, hblank_len);
-    set_dma_buf_desc_buffer(&dma_buf_desc[d++], (uint8_t *) 0, h_pixels);  // set later with set_vga_i2s_active_framebuffer()
+    set_dma_buf_desc_buffer(&dma_buf_desc[d++], (uint8_t *) 0, vga_mode->h_pixels);  // set later with set_vga_i2s_active_framebuffer()
   }
 }
 
@@ -273,8 +294,8 @@ static void allocate_vga_i2s_buffers()
  */
 static void set_vga_i2s_active_framebuffer(unsigned char **fb)
 {
-  for (int i = 0; i < v_pixels; i++) {
-    set_dma_buf_desc_buffer(&dma_buf_desc[2*(v_front+v_sync+v_back+i)+1], fb[i/v_div], h_pixels);
+  for (int i = 0; i < vga_mode->v_pixels; i++) {
+    set_dma_buf_desc_buffer(&dma_buf_desc[2*(vga_mode->v_front+vga_mode->v_sync+vga_mode->v_back+i)+1], fb[i/vga_mode->v_div], vga_mode->h_pixels);
   }
 }
 
@@ -286,10 +307,10 @@ static void set_vga_i2s_active_framebuffer(unsigned char **fb)
 
 static unsigned char **alloc_framebuffer()
 {
-  unsigned char **fb = (unsigned char **) malloc(sizeof(unsigned char *) * v_pixels/v_div);
+  unsigned char **fb = (unsigned char **) malloc(sizeof(unsigned char *) * vga_mode->y_res());
   check_alloc(fb, "not enough memory for framebuffer");
-  for (int i = 0; i < v_pixels/v_div; i++) {
-    fb[i] = (uint8_t *) heap_caps_malloc((h_pixels+3) & 0xfffffffc, MALLOC_CAP_DMA);
+  for (int i = 0; i < vga_mode->y_res(); i++) {
+    fb[i] = (uint8_t *) heap_caps_malloc((vga_mode->h_pixels+3) & 0xfffffffc, MALLOC_CAP_DMA);
     check_alloc(fb[i], "not enough DMA memory for framebuffer");
   }
   return fb;
@@ -297,14 +318,14 @@ static unsigned char **alloc_framebuffer()
 
 static void clear_framebuffer(unsigned char **fb, uint8_t color)
 {
-  unsigned int clear_byte = sync_bits | (color & 0x3f);
+  unsigned int clear_byte = vga_mode->sync_bits() | (color & 0x3f);
   unsigned int clear_data = ((clear_byte << 24) |
                              (clear_byte << 16) |
                              (clear_byte <<  8) |
                              (clear_byte <<  0));
-  for (int y = 0; y < y_res; y++) {
+  for (int y = 0; y < vga_mode->y_res(); y++) {
     unsigned int *line = (unsigned int *) fb[y];
-    for (int x = 0; x < x_res/4; x++) {
+    for (int x = 0; x < vga_mode->x_res()/4; x++) {
       line[x] = clear_data;
     }
   }
@@ -380,7 +401,7 @@ static void setup_i2s_output(const int *pin_map)
   I2S1.sample_rate_conf.tx_bits_mod = 8;
   
   // clock setup
-  long freq = pixel_clock * 2;
+  long freq = vga_mode->pixel_clock * 2;
   int sdm, sdmn;
   int odir = -1;
   do {	
@@ -474,12 +495,15 @@ static void start_i2s_output()
  *   [6] H-sync
  *   [7] V-sync
  */
-void vga_init(const int *pin_map)
+void vga_init(const int *pin_map, const VgaMode &mode, bool double_buffered)
 {
-  framebuffer[0] = alloc_framebuffer();
-  framebuffer[1] = alloc_framebuffer();
+  vga_mode = &mode;
+  num_framebuffers = (double_buffered) ? 2 : 1;
+  for (int i = 0; i < num_framebuffers; i++) {
+    framebuffer[i] = alloc_framebuffer();
+  }
   active_framebuffer = 0;
-  back_framebuffer = 1;
+  back_framebuffer = (active_framebuffer+1) % num_framebuffers;
   clear_framebuffer(framebuffer[active_framebuffer], 0);
   clear_framebuffer(framebuffer[back_framebuffer], 0);
 
@@ -490,7 +514,7 @@ void vga_init(const int *pin_map)
   start_i2s_output();
 
 #if 0
-  Serial.print("sync_bits="); Serial.println(sync_bits);
+  Serial.print("sync_bits="); Serial.println(vga_mode->sync_bits());
   for (int i = 0; i < dma_buf_desc_count; i++) {
     Serial.printf("%4d: %4d 0x%08x { %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ... }\n",
                   i, dma_buf_desc[i].length, (int32_t) dma_buf_desc[i].buf,
@@ -511,14 +535,14 @@ void vga_init(const int *pin_map)
 void vga_swap_buffers(bool wait_vsync)
 {
   if (wait_vsync) {
-    // we might wait up to 1/60s = 16.7 milliseconds here
+    // we might wait up to 1s/60 = 16.7 milliseconds here
     vga_frame_count = 0;
     while (vga_frame_count == 0) {
-      delayMicroseconds(0);  // wait
+      delayMicroseconds(0);
     }
   }
   active_framebuffer = back_framebuffer;
-  back_framebuffer = 1 - back_framebuffer;
+  back_framebuffer = (active_framebuffer+1) % num_framebuffers;
   set_vga_i2s_active_framebuffer(framebuffer[active_framebuffer]);
 }
 
@@ -535,7 +559,23 @@ void vga_clear_screen(uint8_t color)
  */
 uint8_t vga_get_sync_bits()
 {
-  return sync_bits;
+  return vga_mode->sync_bits();
+}
+
+/**
+ * Return the horizontal resolution of the screen (in pixels)
+ */
+int vga_get_xres()
+{
+  return vga_mode->x_res();
+}
+
+/**
+ * Return the vertical resolution of the screen (in pixels)
+ */
+int vga_get_yres()
+{
+  return vga_mode->y_res();
 }
 
 /**

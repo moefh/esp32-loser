@@ -44,6 +44,7 @@ public:
   }
 
   virtual void update() {
+    last = cur;
     int x = analogRead(pin_x);
     int y = analogRead(pin_y);
     cur = ((digitalRead(pin_a) ? 0 : JOY_BTN_A) |

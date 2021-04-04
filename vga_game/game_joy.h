@@ -22,11 +22,6 @@ public:
 
   virtual void init() = 0;
   virtual void update() = 0;
-
-  void ack() {
-    last = cur;
-  }
-
 };
 
 #endif /* GAME_JOY_H_FILE */

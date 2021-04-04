@@ -13,14 +13,12 @@
 class GameControl {
 protected:
   int last_step_millis = 0;
-  GAME_DATA *game_data;
   GameCharacter player;
 
   void screenFollowCharacter(GameCharacter &c);
   
 public:
   void init() {
-    game_data = &::game_data;
     const MAP_SPAWN_POINT *spawn = &game_map.spawn_points[0];
     player.init(&char_def, &game_sprites[0], spawn->pos.x>>16, spawn->pos.y>>16, spawn->dir);
   }
