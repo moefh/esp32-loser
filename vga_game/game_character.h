@@ -13,14 +13,16 @@ protected:
   int dx, dy;        /* movement direction */
   int state;         /* STATE_xxx */
   int dir;           /* DIR_xxx */
+  int shooting_pose; /* # of frames to hold shooting pose */
   int frame;
   int frame_delay;
 
   void decreaseHorizontalSpeed(int amount);
-  void controlStand(int joy_dx, int jump, int last_jump);
-  void controlWalk(int joy_dx, int jump, int last_jump);
-  void controlJumpStart(int joy_dx, int jump, int last_jump);
-  void controlJumpEnd(int joy_dx, int jump, int last_jump);
+  void controlStand(int joy_dx, unsigned int flags);
+  void controlWalk(int joy_dx, unsigned int flags);
+  void controlJumpStart(int joy_dx, unsigned int flags);
+  void controlJumpEnd(int joy_dx, unsigned int flags);
+  bool createNewShot();
 
 public:
   enum {
@@ -44,6 +46,7 @@ public:
     state = STATE_STAND;
     dx = dy = 0;
     frame = frame_delay = 0;
+    shooting_pose = 0;
   }
 
   int getCenterX() { return x + def->clip.width/2; }

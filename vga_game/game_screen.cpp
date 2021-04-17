@@ -14,6 +14,23 @@ void GameScreen::init(const int *pin_config, bool low_res_mode) {
   screen_w  = vga_get_xres();
   screen_h  = vga_get_yres();
   sync_bits = vga_get_sync_bits();
+  checkSprites();
+}
+
+void GameScreen::checkSprites() {
+  bool ok = true;
+  for (int i = 0; i < game_num_sprite_defs; i++) {
+    if (! checkImageSBits(game_sprite_defs[i].data)) {
+      ok = false;
+    }
+  }
+  setImagesSBitsOk(ok);
+  
+  if (! ok) {
+    Serial.println("ERROR: bad SBits in sprite images");
+    Serial.print("Current VGA mode SBits value: ");
+    Serial.println(sync_bits);
+  }
 }
 
 int GameScreen::fpsCounter(int cur_millis) {
@@ -375,8 +392,8 @@ void GameScreen::drawSprite(const SPRITE_DEF *def, int spr_x, int spr_y, int fra
 }
 
 void GameScreen::setScreenPos() {
-  screen_x = game_data->camera_x - screen_w/2;
-  screen_y = game_data->camera_y - screen_h/2;
+  screen_x = game_data.camera_x - screen_w/2;
+  screen_y = game_data.camera_y - screen_h/2;
 
   if (screen_x < 0) {
     screen_x = 0;
@@ -388,25 +405,6 @@ void GameScreen::setScreenPos() {
     screen_y = 0;
   } else if (screen_y >= game_map.height*TILE_HEIGHT - screen_h) {
     screen_y = game_map.height*TILE_HEIGHT - screen_h - 1;
-  }
-}
-
-void GameScreen::setSprites(int num_sprites, SPRITE *sprites) {
-  this->num_sprites = num_sprites;
-  this->sprites = sprites;
-  
-  bool ok = true;
-  for (int i = 0; i < num_sprites; i++) {
-    if (! checkImageSBits(sprites[i].def->data)) {
-      ok = false;
-    }
-  }
-  setImagesSBitsOk(ok);
-  
-  if (! ok) {
-    Serial.println("ERROR: bad SBits in sprite images");
-    Serial.print("Current VGA mode SBits value: ");
-    Serial.println(sync_bits);
   }
 }
 
@@ -439,13 +437,14 @@ void GameScreen::renderScreen() {
   }
 
   // sprites
-  for (int i = 0; i < num_sprites; i++) {
-    int spr_x = sprites[i].x - screen_x;
-    int spr_y = sprites[i].y - screen_y;
-    if (spr_x <= -sprites[i].def->width) continue;
-    if (spr_y <= -sprites[i].def->height) continue;
+  for (int i = 0; i < GAME_NUM_SPRITES; i++) {
+    if (game_sprites[i].def == NULL) continue;
+    int spr_x = game_sprites[i].x - screen_x;
+    int spr_y = game_sprites[i].y - screen_y;
+    if (spr_x <= -game_sprites[i].def->width) continue;
+    if (spr_y <= -game_sprites[i].def->height) continue;
     if (spr_x >= screen_w || spr_y >= screen_h) continue;
-    drawSprite(sprites[i].def, spr_x, spr_y, sprites[i].frame, true);
+    drawSprite(game_sprites[i].def, spr_x, spr_y, game_sprites[i].frame, true);
   }
 
   // foreground
@@ -486,9 +485,9 @@ void GameScreen::show(int cur_millis) {
   draw_text(fs, font6x8, screen_w-40, screen_h-20, 0x3f, fps);
 
   draw_text(fs, font6x8, 10, screen_h-30, 0x3f, "x");
-  draw_text(fs, font6x8, 30, screen_h-30, 0x3f, sprites[0].x);
+  draw_text(fs, font6x8, 30, screen_h-30, 0x3f, game_sprites[0].x);
   draw_text(fs, font6x8, 10, screen_h-20, 0x3f, "y");
-  draw_text(fs, font6x8, 30, screen_h-20, 0x3f, sprites[0].y);
+  draw_text(fs, font6x8, 30, screen_h-20, 0x3f, game_sprites[0].y);
   
   vga_swap_buffers();
 }

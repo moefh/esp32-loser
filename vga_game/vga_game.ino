@@ -54,14 +54,15 @@ GameArduinoJoy joystick(PIN_JOY_A, PIN_JOY_B, PIN_JOY_C, PIN_JOY_D, PIN_JOY_E, P
 
 void setup()
 {
-  pinMode(PIN_ENABLE_NETWORK, INPUT_PULLUP);
+  //pinMode(PIN_ENABLE_NETWORK, INPUT_PULLUP);
   
   Serial.begin(115200);
   Serial.println("Starting...");
 
   delay(1000);
-  bool enable_network = digitalRead(PIN_ENABLE_NETWORK);
-  Serial.printf("pin %d reads %d\n", PIN_ENABLE_NETWORK, digitalRead(PIN_ENABLE_NETWORK));
+  //bool enable_network = digitalRead(PIN_ENABLE_NETWORK);
+  //Serial.printf("pin %d reads %d\n", PIN_ENABLE_NETWORK, digitalRead(PIN_ENABLE_NETWORK));
+#define enable_network false
     
   joystick.init();
   control.init();
@@ -70,8 +71,6 @@ void setup()
   }
 
   screen.init(pin_config, enable_network);
-  screen.setData(&game_data);
-  screen.setSprites(game_num_sprites, game_sprites);
   screen.clear();
 }
 

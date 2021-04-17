@@ -16,6 +16,7 @@ protected:
   GameCharacter player;
 
   void screenFollowCharacter(GameCharacter &c);
+  void moveShots();
   
 public:
   void init() {

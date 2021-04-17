@@ -7,8 +7,7 @@
 // sprites
 #include "spr_castle3.h"
 #include "spr_loserboy.h"
-#include "spr_punkman.h"
-#include "spr_powerup.h"
+#include "spr_pwr2.h"
 
 GAME_DATA game_data;
 
@@ -16,18 +15,14 @@ const SPRITE_DEF game_sprite_defs[] = {
 #define ADD_SPRITE_DEF(name) { img_##name##_width, img_##name##_height, img_##name##_stride, img_##name##_num_spr, img_##name##_data }
   ADD_SPRITE_DEF(castle3),
   ADD_SPRITE_DEF(loserboy),
-  ADD_SPRITE_DEF(punkman),
-  ADD_SPRITE_DEF(powerup),
+  ADD_SPRITE_DEF(pwr2),
 };
 const int game_num_sprite_defs = (int) (sizeof(game_sprite_defs)/sizeof(*game_sprite_defs));
 
-SPRITE game_sprites[] = {
+SPRITE game_sprites[GAME_NUM_SPRITES] = {
   { &game_sprite_defs[1],  64,  64,  0, },   // loserboy (player)
   { &game_sprite_defs[1], -64, -64,  0, },   // loserboy (network)
-  { &game_sprite_defs[2], 384, 512,  0, },   // punkman
-  { &game_sprite_defs[3], 204,  10,  0, },   // powerup
 };
-const int game_num_sprites = (int) (sizeof(game_sprites)/sizeof(*game_sprites));
 
 const CHAR_DEF char_def = {
   .clip = { 15, 5, 31, 35 },

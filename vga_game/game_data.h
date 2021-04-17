@@ -5,6 +5,11 @@
 #define TILE_HEIGHT 64
 #define TILE_STRIDE 16
 
+#define GAME_NUM_SPRITE_DEF_SHOT    2
+
+#define GAME_NUM_SPRITES            16
+#define GAME_NUM_SPRITE_FIRST_SHOT  2
+
 enum {
   MAP_BLOCK,
   MAP_BLOCK1,
@@ -95,7 +100,6 @@ struct CHAR_DEF {
 extern const int game_num_sprite_defs;
 extern const SPRITE_DEF game_sprite_defs[];
 
-extern const int game_num_sprites;
 extern SPRITE game_sprites[];
 
 extern const MAP game_map;

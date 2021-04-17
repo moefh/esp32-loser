@@ -27,9 +27,6 @@ private:
   bool images_sbits_ok = false;
   unsigned char sync_bits;
 
-  int num_sprites;
-  SPRITE *sprites;
-  GAME_DATA *game_data;
   int screen_x;
   int screen_y;
   int screen_w;
@@ -50,6 +47,7 @@ protected:
   void drawImageLineTr3(unsigned int *screen, const unsigned int *image, int image_width, bool skip_first_block);
   
   void renderScreen();
+  void checkSprites();
   
 public:
 
@@ -61,9 +59,6 @@ public:
   bool checkImageSBits(const unsigned int *image_data) {
     return (sync_bits == (image_data[0]&0xc0));
   }
-
-  void setSprites(int num_sprites, SPRITE *sprites);
-  void setData(GAME_DATA *d) { game_data = d; }
 
   void clear(unsigned char color = 0);
   void drawSprite(const SPRITE_DEF *def, int spr_x, int spr_y, int frame, bool transparent);
