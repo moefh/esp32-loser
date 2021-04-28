@@ -33,3 +33,14 @@ Here's a photo of the ESP32 with my homemade VGA board with the DACs:
 ![ESP32](images/loser2.jpg)
 
 The jumpers coming down out of it are connected to a standard Arduino joystick shield.
+
+## VGA output schematic
+
+This is the schematic for my VGA output:
+
+![VGA output schematic](images/schematic-vga-out.png)
+
+I'm pretty sure my attempt at matching the impedance VGA monitors (75 ohms) is not
+really right, but this setup does produce correct voltage levels (it outputs 0.63V
+for full color intensity, where VGA specifies 0.7V). In any case, the image looks
+nice enough.
