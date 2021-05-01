@@ -5,8 +5,16 @@
 #include "game_joy.h"
 #include "game_wiimote.h"
 #include "game_arduino_joy.h"
+#include "game_wii_wired.h"
 
-#define USE_WIIMOTE  1  /* 1=use wiimote via bluetooth, 0=use arduino joystick shield */
+// main configurations
+#define CONTROLLER_TYPE  CONTROLLER_WII_WIRED
+#define ENABLE_NETWORK   0    // 1 to enable, 0 to disable
+
+// controller types
+#define CONTROLLER_WIIMOTE      1
+#define CONTROLLER_ARDUINO_JOY  2
+#define CONTROLLER_WII_WIRED    3
 
 // Configuration pins
 #define PIN_ENABLE_NETWORK 27
@@ -20,6 +28,10 @@
 #define PIN_JOY_F      25
 #define PIN_JOY_X      33
 #define PIN_JOY_Y      32
+
+// Wii wired controller pins (for Wii nunchuck or classic controller)
+#define PIN_WII_SDA    32
+#define PIN_WII_SCL    33
 
 // VGA output pins
 #define PIN_RED_LOW    21
@@ -46,10 +58,14 @@ GameScreen screen;
 GameControl control;
 GameNetwork network;
 
-#if USE_WIIMOTE
+#if   CONTROLLER_TYPE == CONTROLLER_WIIMOTE
 GameWiimote joystick;
-#else
+#elif CONTROLLER_TYPE == CONTROLLER_ARDUINO_JOY
 GameArduinoJoy joystick(PIN_JOY_A, PIN_JOY_B, PIN_JOY_C, PIN_JOY_D, PIN_JOY_E, PIN_JOY_F, PIN_JOY_X, PIN_JOY_Y);
+#elif CONTROLLER_TYPE == CONTROLLER_WII_WIRED
+GameWiiWired joystick(PIN_WII_SDA, PIN_WII_SCL);
+#else
+#error Please define CONTROLLER_TYPE to one of the supported controller types
 #endif
 
 void setup()
@@ -60,9 +76,12 @@ void setup()
   Serial.println("Starting...");
 
   delay(1000);
-  //bool enable_network = digitalRead(PIN_ENABLE_NETWORK);
-  //Serial.printf("pin %d reads %d\n", PIN_ENABLE_NETWORK, digitalRead(PIN_ENABLE_NETWORK));
+#if ENABLE_NETWORK
+  bool enable_network = digitalRead(PIN_ENABLE_NETWORK);
+  Serial.printf("network will be %s according to reading on pin %d\n", (enable_network) ? "enabled" : "disabled", PIN_ENABLE_NETWORK);
+#else
 #define enable_network false
+#endif
     
   joystick.init();
   control.init();
