@@ -63,9 +63,7 @@
  * =====================================================================
  */
 
-#include <Arduino.h>
 #include <esp_heap_caps.h>
-#include <rom/lldesc.h>
 #include <soc/rtc.h>
 #include <soc/i2s_reg.h>
 #include <soc/i2s_struct.h>
@@ -73,6 +71,17 @@
 #include <driver/rtc_io.h>
 #include <driver/gpio.h>
 #include <driver/periph_ctrl.h>
+
+#if ARDUINO_ARCH_ESP32   // compiling under Arduino Core
+#include <Arduino.h>
+#include <rom/lldesc.h>
+#define DELAY(n) delay(n)
+#else                    // compiling under pure ESP-IDF
+#include <esp32/rom/lldesc.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#define DELAY(n) vTaskDelay((n) / portTICK_PERIOD_MS)
+#endif
 
 #include "vga_6bit.h"
 
@@ -171,10 +180,9 @@ static const VgaMode *vga_mode;
 
 static void die(const char *msg)
 {
-  Serial.print("\n\n**** ERROR: ");
-  Serial.println(msg);
+  printf("\n\n**** ERROR: %s\n", msg);
   while (true) {
-    delay(100);
+    DELAY(100);
   }
 }
 
@@ -485,7 +493,7 @@ static void start_i2s_output()
 /**
  * Initialize VGA output.
  *
- * `pin_map` must point to 8 ints selecting the pins, in this order:
+ * `pin_map` must point to 8 ints selecting the gpio pins, in this order:
  *   [0] red   bit 0 (lsb)
  *   [1] red   bit 1 (msb)
  *   [2] green bit 0 (lsb)
@@ -514,13 +522,13 @@ void vga_init(const int *pin_map, const VgaMode &mode, bool double_buffered)
   start_i2s_output();
 
 #if 0
-  Serial.print("sync_bits="); Serial.println(vga_mode->sync_bits());
+  print("sync_bits=-x%x", vga_mode->sync_bits());
   for (int i = 0; i < dma_buf_desc_count; i++) {
-    Serial.printf("%4d: %4d 0x%08x { %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ... }\n",
-                  i, dma_buf_desc[i].length, (int32_t) dma_buf_desc[i].buf,
-                  dma_buf_desc[i].buf[ 0], dma_buf_desc[i].buf[ 1], dma_buf_desc[i].buf[ 2], dma_buf_desc[i].buf[ 3],
-                  dma_buf_desc[i].buf[ 4], dma_buf_desc[i].buf[ 5], dma_buf_desc[i].buf[ 6], dma_buf_desc[i].buf[ 7],
-                  dma_buf_desc[i].buf[ 8], dma_buf_desc[i].buf[ 9], dma_buf_desc[i].buf[10], dma_buf_desc[i].buf[11]);
+    printf("%4d: %4d 0x%08x { %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ... }\n",
+           i, dma_buf_desc[i].length, (int32_t) dma_buf_desc[i].buf,
+           dma_buf_desc[i].buf[ 0], dma_buf_desc[i].buf[ 1], dma_buf_desc[i].buf[ 2], dma_buf_desc[i].buf[ 3],
+           dma_buf_desc[i].buf[ 4], dma_buf_desc[i].buf[ 5], dma_buf_desc[i].buf[ 6], dma_buf_desc[i].buf[ 7],
+           dma_buf_desc[i].buf[ 8], dma_buf_desc[i].buf[ 9], dma_buf_desc[i].buf[10], dma_buf_desc[i].buf[11]);
   }
 #endif
 }
@@ -538,7 +546,7 @@ void vga_swap_buffers(bool wait_vsync)
     // we might wait up to 1s/60 = 16.7 milliseconds here
     vga_frame_count = 0;
     while (vga_frame_count == 0) {
-      delayMicroseconds(0);
+      vTaskDelay(1);
     }
   }
   active_framebuffer = back_framebuffer;
