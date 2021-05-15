@@ -8,55 +8,63 @@
 class GameWiiWired : public GameJoy {
 protected:
   enum Type {
+    NONE,
     UNKNOWN,
-    NUNCHUCK,
+    NUNCHUK,
     CLASSIC,
   };
-  
+
+  int i2c_port;
   int pin_sda;
   int pin_scl;
   Type type;
   bool init_ok;
 
-  Type read_controller_type() {
-    const unsigned char *ident = wii_i2c_read_ident();
-    if (! ident) return Type::UNKNOWN;
+  Type get_controller_type(const unsigned char *ident) {
+    if (! ident) return Type::NONE;
     switch (wii_i2c_decode_ident(ident)) {
-    case WII_I2C_IDENT_NUNCHUCK: return NUNCHUCK;
-    case WII_I2C_IDENT_CLASSIC:  return CLASSIC;
+    case WII_I2C_IDENT_NUNCHUK: return NUNCHUK;
+    case WII_I2C_IDENT_CLASSIC: return CLASSIC;
     default: return UNKNOWN;
     }
   }
   
 public:
-  GameWiiWired(int pin_sda, int pin_scl) : pin_sda(pin_sda), pin_scl(pin_scl) {
+  GameWiiWired(int i2c_port, int pin_sda, int pin_scl) : i2c_port(i2c_port), pin_sda(pin_sda), pin_scl(pin_scl) {
   }
   
   virtual void init() {
     cur = 0;
     last = 0;
-    if (wii_i2c_init(pin_sda, pin_scl) == 0) {
-      type = read_controller_type();
-      //Serial.printf("Controller type is %d\n", type);
-      wii_i2c_request_state();
-      init_ok = true;
-    } else {
-      //Serial.printf("ERROR initializing wii i2c\n");
-      init_ok = false;
+    type = NONE;
+    init_ok = false;
+    
+    if (wii_i2c_init(i2c_port, pin_sda, pin_scl) != 0) {
+      return;
     }
+    const unsigned char *ident = wii_i2c_read_ident();
+    Type controller_type = get_controller_type(ident);
+
+    // start read task on CPU 0 with 15ms delay between reads
+    if (wii_i2c_start_read_task(0, 15) != 0) {
+      return;
+    }
+
+    type = controller_type;
+    init_ok = true;
   }
 
   virtual void update() {
     if (! init_ok) return;
     
+    const unsigned char *data = wii_i2c_read_data_from_task();
+    if (! data) return;
     last = cur;
-    const unsigned char *data = wii_i2c_read_state();
-    wii_i2c_request_state();
     switch (type) {
-    case NUNCHUCK:
+    case NUNCHUK:
       {
-        wii_i2c_nunchuck_state state;
-        wii_i2c_decode_nunchuck(data, &state);
+        wii_i2c_nunchuk_state state;
+        wii_i2c_decode_nunchuk(data, &state);
         cur = ((state.c ? JOY_BTN_C : 0) |  // C
                (state.z ? JOY_BTN_D : 0) |  // Z
                ((state.y >  32) ? JOY_BTN_UP    : 0) |  // up

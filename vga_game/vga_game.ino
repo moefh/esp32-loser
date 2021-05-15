@@ -8,13 +8,8 @@
 #include "game_wii_wired.h"
 
 // main configurations
-#define CONTROLLER_TYPE  CONTROLLER_WII_WIRED
-#define ENABLE_NETWORK   0    // 1 to enable, 0 to disable
-
-// controller types
-#define CONTROLLER_WIIMOTE      1
-#define CONTROLLER_ARDUINO_JOY  2
-#define CONTROLLER_WII_WIRED    3
+#define CONTROLLER_TYPE  CONTROLLER_WII_WIRED  // one of CONTROLLER_xxx from game_joy.h
+#define ENABLE_NETWORK   0                     // 1 to enable, 0 to disable
 
 // Configuration pins
 #define PIN_ENABLE_NETWORK 27
@@ -29,9 +24,10 @@
 #define PIN_JOY_X      33
 #define PIN_JOY_Y      32
 
-// Wii wired controller pins (for Wii nunchuck or classic controller)
+// Wii wired controller config (for Wii nunchuck or classic controller)
 #define PIN_WII_SDA    32
 #define PIN_WII_SCL    33
+#define WII_I2C_PORT   0  // ESP32 I2C port (0 or 1)
 
 // VGA output pins
 #define PIN_RED_LOW    21
@@ -63,7 +59,7 @@ GameWiimote joystick;
 #elif CONTROLLER_TYPE == CONTROLLER_ARDUINO_JOY
 GameArduinoJoy joystick(PIN_JOY_A, PIN_JOY_B, PIN_JOY_C, PIN_JOY_D, PIN_JOY_E, PIN_JOY_F, PIN_JOY_X, PIN_JOY_Y);
 #elif CONTROLLER_TYPE == CONTROLLER_WII_WIRED
-GameWiiWired joystick(PIN_WII_SDA, PIN_WII_SCL);
+GameWiiWired joystick(WII_I2C_PORT, PIN_WII_SDA, PIN_WII_SCL);
 #else
 #error Please define CONTROLLER_TYPE to one of the supported controller types
 #endif

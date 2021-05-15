@@ -4,6 +4,12 @@
 
 #include "util.h"
 
+// controller types
+#define CONTROLLER_WIIMOTE      1
+#define CONTROLLER_ARDUINO_JOY  2
+#define CONTROLLER_WII_WIRED    3
+
+// joystick button bit flags
 #define JOY_BTN_A     (1u<<0)
 #define JOY_BTN_B     (1u<<1)
 #define JOY_BTN_C     (1u<<2)
