@@ -1,9 +1,8 @@
-#include <Arduino.h>
-#include "vga_6bit.h"
-
 #include "game_screen.h"
 #include "game_data.h"
 
+#include "util.h"
+#include "vga_6bit.h"
 #include "font.h"
 #include "font6x8.h"
 

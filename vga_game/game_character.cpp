@@ -33,7 +33,7 @@ void GameCharacter::calcSpriteState()
 bool GameCharacter::createNewShot()
 {
   for (int i = GAME_NUM_SPRITE_FIRST_SHOT; i < GAME_NUM_SPRITES; i++) {
-    if (game_sprites[i].def == NULL) {
+    if (! game_sprites[i].def) {
       const SPRITE_DEF *shot_def = &game_sprite_defs[GAME_NUM_SPRITE_DEF_SHOT];
       game_sprites[i].def = shot_def;
       game_sprites[i].y = y - def->clip.y + spr->def->height/2 - shot_def->height/2 - 4;

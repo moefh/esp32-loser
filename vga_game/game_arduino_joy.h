@@ -3,7 +3,6 @@
 #define GAME_ARDUINO_JOY_H_FILE
 
 #include "game_joy.h"
-#include "Arduino.h"
 
 #define ARDUINO_JOY_DEADZONE_X  2048
 #define ARDUINO_JOY_DEADZONE_Y  2048

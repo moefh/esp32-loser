@@ -2,7 +2,7 @@
 #ifndef GAME_JOY_H_FILE
 #define GAME_JOY_H_FILE
 
-#include "Arduino.h"
+#include "util.h"
 
 #define JOY_BTN_A     (1u<<0)
 #define JOY_BTN_B     (1u<<1)

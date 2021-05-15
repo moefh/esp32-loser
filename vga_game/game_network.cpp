@@ -1,15 +1,14 @@
-#include <Arduino.h>
-
 #include "game_network.h"
 
 #include "net.h"
+#include "util.h"
 
 void GameNetwork::init(SPRITE *local, SPRITE *remote)
 {
   // ESP.getFreeHeap()
-  Serial.printf("-> initializing network\n");
+  printf("-> initializing network\n");
   if (net_init() != 0) {
-    Serial.printf("Error initializing network\n");
+    printf("Error initializing network\n");
     running = 0;
     return;
   }
