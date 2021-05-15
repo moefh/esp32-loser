@@ -4,6 +4,8 @@
 
 #include <cstdint>
 
+#define FONT_CURSOR ((unsigned int) (-1))
+
 typedef struct {
   int w;
   int h;
@@ -17,10 +19,18 @@ typedef struct {
   int y_res;
   uint8_t sync_bits;
   uint8_t **framebuffer;
-} FONT_SCREEN;
+  const FONT *font;
+} FONT_INFO;
 
-void draw_text(const FONT_SCREEN &screen, const FONT &font, unsigned int x, unsigned int y, uint8_t color, int num);
-void draw_text(const FONT_SCREEN &screen, const FONT &font, unsigned int x, unsigned int y, uint8_t color, float num);
-void draw_text(const FONT_SCREEN &screen, const FONT &font, unsigned int x, unsigned int y, uint8_t color, const char *text);
+void font_set_cursor(unsigned int x, unsigned int y);
+void font_draw(const FONT_INFO &info, unsigned int x, unsigned int y, uint8_t color, int num);
+void font_draw(const FONT_INFO &info, unsigned int x, unsigned int y, uint8_t color, unsigned int num);
+void font_draw(const FONT_INFO &info, unsigned int x, unsigned int y, uint8_t color, float num);
+void font_draw(const FONT_INFO &info, unsigned int x, unsigned int y, uint8_t color, const char *text);
+
+void font_draw(const FONT_INFO &info, uint8_t color, int num);
+void font_draw(const FONT_INFO &info, uint8_t color, unsigned int num);
+void font_draw(const FONT_INFO &info, uint8_t color, float num);
+void font_draw(const FONT_INFO &info, uint8_t color, const char *text);
 
 #endif /* VGA_FONT_H_FILE */

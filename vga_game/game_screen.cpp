@@ -468,26 +468,26 @@ void GameScreen::clear(unsigned char color) {
 }
 
 void GameScreen::show(int cur_millis) {
-  FONT_SCREEN fs = { screen_w, screen_h, sync_bits, vga_get_framebuffer() };
+  FONT_INFO fi = { screen_w, screen_h, sync_bits, vga_get_framebuffer(), &font6x8 };
   
   if (images_sbits_ok) {
     renderScreen();
   } else {
     clear(0x30);
-    draw_text(fs, font6x8, 10, 40, 0x3f, "Image data doesn't match");
-    draw_text(fs, font6x8, 10, 50, 0x3f, "VGA mode sync bits");
-    draw_text(fs, font6x8, 10, 60, 0x3f, (int) sync_bits);
+    font_draw(fi, 10, 40, 0x3f, "Image data doesn't match");
+    font_draw(fi, 10, 50, 0x3f, "VGA mode sync bits");
+    font_draw(fi, 10, 60, 0x3f, (int) sync_bits);
   }
 
   int fps = fpsCounter(cur_millis);
   last_millis = cur_millis;
-  draw_text(fs, font6x8, screen_w-70, screen_h-20, 0x3f, "fps:");
-  draw_text(fs, font6x8, screen_w-40, screen_h-20, 0x3f, fps);
 
-  draw_text(fs, font6x8, 10, screen_h-30, 0x3f, "x");
-  draw_text(fs, font6x8, 30, screen_h-30, 0x3f, game_sprites[0].x);
-  draw_text(fs, font6x8, 10, screen_h-20, 0x3f, "y");
-  draw_text(fs, font6x8, 30, screen_h-20, 0x3f, game_sprites[0].y);
+  font_set_cursor(screen_w - 70, screen_h - 20);
+  font_draw(fi, 0x3f, fps);
+  font_draw(fi, 0x3f, " fps");
+
+  font_draw(fi, 10, screen_h-30, 0x3f, "x "); font_draw(fi, 0x3f, game_sprites[0].x);
+  font_draw(fi, 10, screen_h-20, 0x3f, "y "); font_draw(fi, 0x3f, game_sprites[0].y);
   
   vga_swap_buffers();
 }
