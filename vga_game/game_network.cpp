@@ -9,11 +9,12 @@ void GameNetwork::init(SPRITE *local, SPRITE *remote)
   printf("-> initializing network\n");
   if (net_init() != 0) {
     printf("Error initializing network\n");
-    running = 0;
+    running = false;
     return;
   }
-  running = 1;
+  running = true;
   tx_errors = 0;
+  tx_packets = 0;
 
   local_spr = local;
   remote_spr = remote;
@@ -32,6 +33,8 @@ void GameNetwork::step()
     *p++ = local_spr->frame;
     if (net_send_message((uint8_t *) msg_buffer) != 0) {
       tx_errors++;
+    } else {
+      tx_packets++;
     }
   }
 

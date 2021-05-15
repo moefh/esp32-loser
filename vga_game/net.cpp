@@ -1,8 +1,15 @@
 
+#if ARDUINO_ARCH_ESP32
 #include <WiFi.h>
+#else
+#include <esp_wifi.h>
+#endif
+
+#include <cstring>
 #include <esp_now.h>
 
 #include "net.h"
+#include "util.h"
 
 static esp_now_peer_info_t peer_info;
 static const uint8_t net_broadcast_addr[] = {
@@ -14,6 +21,21 @@ static volatile int     net_tx_msg_sending;
 static volatile int     net_rx_msg_first_available;
 static volatile int     net_rx_msg_num_available;
 static volatile uint8_t net_rx_msg_buf[NET_MSG_SIZE*NET_MSG_RX_QUEUE_LEN];
+
+static int init_wifi()
+{
+#if ARDUINO_ARCH_ESP32
+  WiFi.mode(WIFI_MODE_STA);
+#else
+  if (esp_netif_init() != ESP_OK) return 1;
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  if (esp_wifi_init(&cfg) != ESP_OK) return 1;
+  if (esp_wifi_set_storage(WIFI_STORAGE_RAM) != ESP_OK) return 1;
+  if (esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK) return 1;
+  if (esp_wifi_start() != ESP_OK) return 1;
+#endif
+  return 0;
+}
 
 static void net_data_sent_callback(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
@@ -74,21 +96,24 @@ int net_init()
   net_tx_msg_sending = 0;
   net_rx_msg_num_available = 0;
   net_rx_msg_first_available = 0;
-  
-  WiFi.mode(WIFI_MODE_STA);
 
+  if (init_wifi() != 0) {
+    printf("ERROR initializing WiFi\n");
+    return 1;
+  }
+  
   if (esp_now_init() != ESP_OK) {
-    Serial.printf("ERROR initializing ESP-NOW\n");
+    printf("ERROR initializing ESP-NOW\n");
     return 1;
   }
   
   if (esp_now_register_send_cb(net_data_sent_callback) != ESP_OK) {
-    Serial.printf("ERROR registering send callback\n");
+    printf("ERROR registering send callback\n");
     return 1;
   }
     
   if (esp_now_register_recv_cb(net_data_recv_callback) != ESP_OK) {
-    Serial.printf("ERROR registering recv callback\n");
+    printf("ERROR registering recv callback\n");
     return 1;
   }
   
@@ -96,10 +121,10 @@ int net_init()
   peer_info.channel = 0;
   peer_info.encrypt = false;
   if (esp_now_add_peer(&peer_info) != ESP_OK) {
-    Serial.printf("ERROR adding peer\n");
+    printf("ERROR adding peer\n");
     return 1;
   }
 
-  Serial.printf("OK: network initialized\n");
+  printf("OK: network initialized\n");
   return 0;
 }

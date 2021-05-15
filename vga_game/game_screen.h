@@ -8,17 +8,6 @@
 
 #include "game_data.h"
 
-// x-coord : |        0        1        2        3 |        4        5        6        7 | ...
-// address : |      [2]      [3]      [0]      [1] |      [6]      [7]      [4]      [5] | ...
-// mask    : | 00ff0000 ff000000 000000ff 0000ff00 | 00ff0000 ff000000 000000ff 0000ff00 | ...
-
-#define GET_PIX0_TRANSP_MASK(block) ((((block) & 0x003f0000) != 0x000c0000) ? 0x00ff0000 : 0)
-#define GET_PIX1_TRANSP_MASK(block) ((((block) & 0x3f000000) != 0x0c000000) ? 0xff000000 : 0)
-#define GET_PIX2_TRANSP_MASK(block) ((((block) & 0x0000003f) != 0x0000000c) ? 0x000000ff : 0)
-#define GET_PIX3_TRANSP_MASK(block) ((((block) & 0x00003f00) != 0x00000c00) ? 0x0000ff00 : 0)
-#define GET_4PIX_TRANSP_MASK(block) (GET_PIX0_TRANSP_MASK(block) | GET_PIX1_TRANSP_MASK(block) | \
-                                     GET_PIX2_TRANSP_MASK(block) | GET_PIX3_TRANSP_MASK(block))
-
 class GameScreen {
 private:
   int last_millis = 0;
@@ -52,10 +41,10 @@ protected:
 public:
 
   void init(const int *pin_config, bool low_res_mode);
+
   void setImagesSBitsOk(bool ok) { images_sbits_ok = ok; }
   bool getImagesSBitsOk(bool ok) { return images_sbits_ok; }
   unsigned char getSBits() { return sync_bits; }
-
   bool checkImageSBits(const unsigned int *image_data) {
     return (sync_bits == (image_data[0]&0xc0));
   }

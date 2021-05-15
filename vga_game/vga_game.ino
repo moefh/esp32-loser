@@ -9,10 +9,10 @@
 
 // main configurations
 #define CONTROLLER_TYPE  CONTROLLER_WII_WIRED  // one of CONTROLLER_xxx from game_joy.h
-#define ENABLE_NETWORK   0                     // 1 to enable, 0 to disable
+#define ENABLE_NETWORK   1                     // 1 to enable, 0 to disable
 
 // Configuration pins
-#define PIN_ENABLE_NETWORK 27
+#define PIN_NETWORK_ENABLE 27
 
 // Joystick input pins (for Arduino joystick shield)
 #define PIN_JOY_A      13
@@ -66,15 +66,16 @@ GameWiiWired joystick(WII_I2C_PORT, PIN_WII_SDA, PIN_WII_SCL);
 
 void setup()
 {
-  //pinMode(PIN_ENABLE_NETWORK, INPUT_PULLUP);
+#if ENABLE_NETWORK
+  pinMode(PIN_NETWORK_ENABLE, INPUT_PULLUP);
+#endif
   
   Serial.begin(115200);
   Serial.println("Starting...");
 
   delay(1000);
 #if ENABLE_NETWORK
-  bool enable_network = digitalRead(PIN_ENABLE_NETWORK);
-  Serial.printf("network will be %s according to reading on pin %d\n", (enable_network) ? "enabled" : "disabled", PIN_ENABLE_NETWORK);
+  bool enable_network = digitalRead(PIN_NETWORK_ENABLE) ? false : true;
 #else
 #define enable_network false
 #endif
