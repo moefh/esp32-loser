@@ -7,6 +7,8 @@
  */
 
 #include "game_data.h"
+#include "game_network.h"
+#include "game_joy.h"
 
 class GameScreen {
 private:
@@ -15,6 +17,8 @@ private:
   int fps_frame_count = 0;
   bool images_sbits_ok = false;
   unsigned char sync_bits;
+  GameNetwork *net;
+  GameJoy *joy;
 
   int screen_x;
   int screen_y;
@@ -40,7 +44,7 @@ protected:
   
 public:
 
-  void init(const int *pin_config, bool low_res_mode);
+  void init(const int *pin_config, GameNetwork *net, GameJoy *joy);
 
   void setImagesSBitsOk(bool ok) { images_sbits_ok = ok; }
   bool getImagesSBitsOk(bool ok) { return images_sbits_ok; }

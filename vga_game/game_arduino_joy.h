@@ -42,6 +42,9 @@ public:
     pinMode(pin_y, INPUT);
   }
 
+  virtual int getType() { return CONTROLLER_ARDUINO_JOY; }
+  virtual const char *getName() { return "Arduino Joystick"; }
+
   virtual void update() {
     last = cur;
     int x = analogRead(pin_x);

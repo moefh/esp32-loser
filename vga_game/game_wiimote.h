@@ -31,6 +31,9 @@ public:
     Wiimote::register_callback(1, GameWiimote::callback, this);
   }
 
+  virtual int getType() { return CONTROLLER_WIIMOTE; }
+  virtual const char *getName() { return "Wiimote"; }
+
   virtual void update() {
     last = cur;
     Wiimote::handle();

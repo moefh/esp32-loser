@@ -54,6 +54,20 @@ public:
     init_ok = true;
   }
 
+  virtual int getType() {
+    return CONTROLLER_WII_WIRED;
+  }
+  
+  virtual const char *getName() {
+    switch (type) {
+    case NONE:    return "not found";
+    case UNKNOWN: return "unknown";
+    case NUNCHUK: return "Wii Nunchuk";
+    case CLASSIC: return "Wii Classic";
+    }
+    return "?";
+  }
+  
   virtual void update() {
     if (! init_ok) return;
     

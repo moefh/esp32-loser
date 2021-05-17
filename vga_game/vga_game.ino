@@ -71,22 +71,22 @@ void setup()
 #endif
   
   Serial.begin(115200);
-  Serial.println("Starting...");
+  printf("Starting...\n");
 
   delay(1000);
-#if ENABLE_NETWORK
-  bool enable_network = digitalRead(PIN_NETWORK_ENABLE) ? false : true;
-#else
-#define enable_network false
-#endif
     
   joystick.init();
   control.init();
-  if (enable_network) {
+#if ENABLE_NETWORK
+  if (digitalRead(PIN_NETWORK_ENABLE) == 0) {
+    printf("Starting network\n");
     network.init(&game_sprites[0], &game_sprites[1]);
+  } else {
+    printf("Network disabled via pin %d\n", PIN_NETWORK_ENABLE);
   }
+#endif
 
-  screen.init(pin_config, enable_network);
+  screen.init(pin_config, &network, &joystick);
   screen.clear();
 }
 

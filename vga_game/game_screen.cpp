@@ -19,12 +19,37 @@
 #define GET_4PIX_TRANSP_MASK(block) (GET_PIX0_TRANSP_MASK(block) | GET_PIX1_TRANSP_MASK(block) | \
                                      GET_PIX2_TRANSP_MASK(block) | GET_PIX3_TRANSP_MASK(block))
 
-void GameScreen::init(const int *pin_config, bool low_res_mode) {
-  vga_init(pin_config, (low_res_mode) ? vga_mode_240x240 : vga_mode_320x240);
+// Select screen resolution according to the enabled features (there's
+// not enough memory to enable everything at max resolution)
+static const VgaMode &get_vga_mode(GameNetwork *net, GameJoy *joy)
+{
+  if (net->is_running()) {
+    if (joy->getType() == CONTROLLER_WIIMOTE) {
+      // WiFi with Bluetooth:
+      return vga_mode_240x240;
+    }
+    
+    // WiFi without Bluetooth:
+#if ARDUINO_ARCH_ESP32
+    return vga_mode_288x240;  // under Arduino Core, WiFi takes up too much memory to use 320x240
+#else
+    return vga_mode_320x240;  // under ESP-IDF we can lower the number of WiFi buffers to lower memory usage
+#endif
+  }
+
+  // no WiFi:
+  return vga_mode_320x240;
+}
+
+
+void GameScreen::init(const int *pin_config, GameNetwork *net, GameJoy *joy) {
+  vga_init(pin_config, get_vga_mode(net, joy));
   screen_w  = vga_get_xres();
   screen_h  = vga_get_yres();
   sync_bits = vga_get_sync_bits();
   checkSprites();
+  this->net = net;
+  this->joy = joy;
 }
 
 void GameScreen::checkSprites() {
@@ -448,7 +473,7 @@ void GameScreen::renderScreen() {
 
   // sprites
   for (int i = 0; i < GAME_NUM_SPRITES; i++) {
-    if (game_sprites[i].def == NULL) continue;
+    if (! game_sprites[i].def) continue;
     int spr_x = game_sprites[i].x - screen_x;
     int spr_y = game_sprites[i].y - screen_y;
     if (spr_x <= -game_sprites[i].def->width) continue;
@@ -498,6 +523,19 @@ void GameScreen::show(int cur_millis) {
 
   font_draw(fi, 10, screen_h-30, 0x3f, "x "); font_draw(fi, 0x3f, game_sprites[0].x);
   font_draw(fi, 10, screen_h-20, 0x3f, "y "); font_draw(fi, 0x3f, game_sprites[0].y);
+
+  font_set_cursor(10, 10);
+  font_draw(fi, 0x3f, "Controller: ");
+  font_draw(fi, 0x3f, joy->getName());
+  if (net->is_running()) {
+    font_set_cursor(10, 20);
+    font_draw(fi, 0x3f, "Network enabled: ");
+    font_draw(fi, 0x3f, net->get_num_tx_packets());
+    font_draw(fi, 0x3f, ":");
+    font_draw(fi, 0x3f, net->get_num_tx_errors());
+  } else {
+    font_draw(fi, 10, 20, 0x3f, "Network disabled");
+  }
   
   vga_swap_buffers();
 }

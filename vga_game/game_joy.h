@@ -27,6 +27,8 @@ public:
   uint32_t last;
 
   virtual void init() = 0;
+  virtual int getType() = 0;
+  virtual const char *getName() = 0;
   virtual void update() = 0;
 };
 
