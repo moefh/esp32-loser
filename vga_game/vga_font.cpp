@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 
-#include "font.h"
+#include "vga_font.h"
 
 static unsigned int font_x, font_y;
 

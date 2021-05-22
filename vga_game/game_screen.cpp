@@ -3,7 +3,7 @@
 
 #include "util.h"
 #include "vga_6bit.h"
-#include "font.h"
+#include "vga_font.h"
 #include "font6x8.h"
 
 #pragma GCC optimize ("-O3")
