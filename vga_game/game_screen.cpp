@@ -23,21 +23,12 @@
 // not enough memory to enable everything at max resolution)
 static const VgaMode &get_vga_mode(GameNetwork *net, GameJoy *joy)
 {
-  if (net->is_running()) {
-    if (joy->getType() == CONTROLLER_WIIMOTE) {
-      // WiFi with Bluetooth:
-      return vga_mode_240x240;
-    }
-    
-    // WiFi without Bluetooth:
-#if ARDUINO_ARCH_ESP32
-    return vga_mode_288x240;  // under Arduino Core, WiFi takes up too much memory to use 320x240
-#else
-    return vga_mode_320x240;  // under ESP-IDF we can lower the number of WiFi buffers to lower memory usage
-#endif
+  if (net->is_running() && joy->getType() == CONTROLLER_WIIMOTE) {
+    // WiFi with Bluetooth:
+    return vga_mode_240x240;
   }
-
-  // no WiFi:
+    
+  // no WiFi or WiFi without Bluetooth:
   return vga_mode_320x240;
 }
 

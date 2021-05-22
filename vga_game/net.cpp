@@ -1,10 +1,9 @@
 
 #if ARDUINO_ARCH_ESP32
-#include <WiFi.h>
-#else
-#include <esp_wifi.h>
+#include <tcpip_adapter.h>
 #endif
 
+#include <esp_wifi.h>
 #include <cstring>
 #include <esp_now.h>
 
@@ -25,15 +24,19 @@ static volatile uint8_t net_rx_msg_buf[NET_MSG_SIZE*NET_MSG_RX_QUEUE_LEN];
 static int init_wifi()
 {
 #if ARDUINO_ARCH_ESP32
-  WiFi.mode(WIFI_MODE_STA);
+  tcpip_adapter_init();
 #else
   if (esp_netif_init() != ESP_OK) return 1;
+#endif
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  cfg.static_tx_buf_num = 0;
+  cfg.dynamic_tx_buf_num = 8;
+  cfg.static_rx_buf_num = 5;
+  cfg.dynamic_rx_buf_num = 8;
   if (esp_wifi_init(&cfg) != ESP_OK) return 1;
   if (esp_wifi_set_storage(WIFI_STORAGE_RAM) != ESP_OK) return 1;
   if (esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK) return 1;
   if (esp_wifi_start() != ESP_OK) return 1;
-#endif
   return 0;
 }
 
