@@ -53,9 +53,8 @@ void GameScreen::checkSprites() {
   setImagesSBitsOk(ok);
   
   if (! ok) {
-    Serial.println("ERROR: bad SBits in sprite images");
-    Serial.print("Current VGA mode SBits value: ");
-    Serial.println(sync_bits);
+    printf("ERROR: bad SBits in sprite images\n");
+    printf("Current VGA mode SBits value: %02x\n", sync_bits);
   }
 }
 

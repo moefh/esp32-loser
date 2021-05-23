@@ -3,6 +3,7 @@
  * This file is part of takeru's ESP32 Wiimote library:
  * https://github.com/takeru/Wiimote
  */
+#include <cstring>
 #include <esp_bt.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>

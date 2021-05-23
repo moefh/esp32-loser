@@ -12,7 +12,11 @@
 #include <stdio.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <stdio.h>
+#include "esp32-hal-gpio.h"
+
 #define delay(n) vTaskDelay((n) / portTICK_PERIOD_MS)
+unsigned long millis();
 
 #endif /* ARDUINO_ARCH_ESP32 */
 

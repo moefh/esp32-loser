@@ -62,23 +62,28 @@ GameArduinoJoy joystick(PIN_JOY_A, PIN_JOY_B, PIN_JOY_C, PIN_JOY_D, PIN_JOY_E, P
 #elif CONTROLLER_TYPE == CONTROLLER_WII_WIRED
 GameWiiWired joystick(WII_I2C_PORT, PIN_WII_SDA, PIN_WII_SCL);
 #else
-#error Please define CONTROLLER_TYPE to one of the supported controller types
+#error Please define CONTROLLER_TYPE to one of the controller types from game_joy.h
 #endif
+
+static void setup_serial()
+{
+#if ARDUINO_ARCH_ESP32
+  Serial.begin(115200);
+#endif
+}
 
 void setup()
 {
-#if ENABLE_NETWORK
-  pinMode(PIN_NETWORK_ENABLE, (DEFAULT_NETWORK_STATE==1) ? INPUT_PULLDOWN : INPUT_PULLUP);
-#endif
-  
-  Serial.begin(115200);
+  setup_serial();
   printf("Starting...\n");
 
-  delay(1000);
+  delay(500);
     
   joystick.init();
   control.init();
 #if ENABLE_NETWORK
+  pinMode(PIN_NETWORK_ENABLE, (DEFAULT_NETWORK_STATE==1) ? INPUT_PULLDOWN : INPUT_PULLUP);
+  delay(100);
   if (digitalRead(PIN_NETWORK_ENABLE) == 0) {
     printf("Starting network\n");
     network.init(&game_sprites[0], &game_sprites[1]);
