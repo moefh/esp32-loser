@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-#define NET_MSG_SIZE          32
+#define NET_MSG_SIZE          64
 #define NET_MSG_RX_QUEUE_LEN  4  // up to N messages in receive queue
 
 int net_init();

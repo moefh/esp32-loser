@@ -18,7 +18,7 @@ void GameControl::screenFollowCharacter(GameCharacter &c)
 
 void GameControl::moveShots()
 {
-  for (int i = GAME_NUM_SPRITE_FIRST_SHOT; i < GAME_NUM_SPRITES; i++) {
+  for (int i = GAME_NUM_SPRITE_FIRST_LOCAL_SHOT; i < GAME_NUM_SPRITE_FIRST_REMOTE_SHOT; i++) {
     if (! game_sprites[i].def) continue;
     int dx = (game_sprites[i].frame == 0) ? 12 : -12;
     int dy = 0;

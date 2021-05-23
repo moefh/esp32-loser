@@ -5,10 +5,10 @@
 #define TILE_HEIGHT 64
 #define TILE_STRIDE 16
 
-#define GAME_NUM_SPRITE_DEF_SHOT    2
-
-#define GAME_NUM_SPRITES            16
-#define GAME_NUM_SPRITE_FIRST_SHOT  2
+#define GAME_NUM_SPRITE_DEF_SHOT           2   // index into sprite_def[] for shot:
+#define GAME_NUM_SPRITES                   16  // number of sprite[]s
+#define GAME_NUM_SPRITE_FIRST_LOCAL_SHOT   2   // index into sprite[] for first local shot
+#define GAME_NUM_SPRITE_FIRST_REMOTE_SHOT  (GAME_NUM_SPRITE_FIRST_LOCAL_SHOT+(GAME_NUM_SPRITES-GAME_NUM_SPRITE_FIRST_LOCAL_SHOT)/2)
 
 enum {
   MAP_BLOCK,
