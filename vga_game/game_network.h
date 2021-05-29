@@ -19,7 +19,7 @@ protected:
   
 public:
   GameNetwork() { running = false; }
-  void init(SPRITE *local, SPRITE *remote);
+  void init();
   void step();
   unsigned int get_num_tx_packets() { return tx_packets; }
   unsigned int get_num_tx_errors() { return tx_errors; }

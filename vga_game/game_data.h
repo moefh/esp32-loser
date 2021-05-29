@@ -7,6 +7,8 @@
 
 #define GAME_NUM_SPRITE_DEF_SHOT           2   // index into sprite_def[] for shot:
 #define GAME_NUM_SPRITES                   16  // number of sprite[]s
+#define GAME_SPRITE_LOCAL_PLAYER           0   // index info sprite[] for local player character
+#define GAME_SPRITE_REMOTE_PLAYER          1   // index info sprite[] for remote player character
 #define GAME_NUM_SPRITE_FIRST_LOCAL_SHOT   2   // index into sprite[] for first local shot
 #define GAME_NUM_SPRITE_FIRST_REMOTE_SHOT  (GAME_NUM_SPRITE_FIRST_LOCAL_SHOT+(GAME_NUM_SPRITES-GAME_NUM_SPRITE_FIRST_LOCAL_SHOT)/2)
 

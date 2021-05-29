@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "game_screen.h"
 #include "game_data.h"
 
@@ -7,6 +9,16 @@
 #include "font6x8.h"
 
 #pragma GCC optimize ("-O3")
+
+enum {
+  DEBUG_SHOW_NOTHING,
+  DEBUG_SHOW_FPS,
+  DEBUG_SHOW_POSITION,
+  DEBUG_SHOW_NETWORK,
+  DEBUG_SHOW_CONTROLLER,
+  DEBUG_SHOW_FRAMETIME,
+  DEBUG_MAX_LEVEL
+};
 
 // x-coord : |        0        1        2        3 |        4        5        6        7 | ...
 // address : |      [2]      [3]      [0]      [1] |      [6]      [7]      [4]      [5] | ...
@@ -38,6 +50,8 @@ void GameScreen::init(const int *pin_config, GameNetwork *net, GameJoy *joy) {
   screen_w  = vga_get_xres();
   screen_h  = vga_get_yres();
   sync_bits = vga_get_sync_bits();
+  debug_level = DEBUG_MAX_LEVEL;
+  last_btn_press_frame = 0;
   checkSprites();
   this->net = net;
   this->joy = joy;
@@ -488,13 +502,79 @@ void GameScreen::renderScreen() {
   }
 }
 
+void GameScreen::renderDebugInfo(FONT_INFO &fi, int cur_millis) {
+  int fps = fpsCounter(cur_millis);
+  last_millis = cur_millis;
+
+  if ((! net->is_running()) && (joy->cur & JOY_BTN_E)) {
+    net->init();
+  }
+
+  if (JOY_BTN_PRESSED(joy, JOY_BTN_F) && (frame_count-last_btn_press_frame > 5)) {
+    debug_level++;
+    if (debug_level >= DEBUG_MAX_LEVEL-1) {
+      debug_level = 0;
+    }
+    last_btn_press_frame = frame_count;
+  }
+  
+  if (debug_level >= DEBUG_SHOW_FPS) {
+    font_set_cursor(10, 10);
+    font_draw(fi, 0x3f, fps);
+    font_draw(fi, 0x3f, " fps");
+  }
+
+  if (debug_level >= DEBUG_SHOW_POSITION) {
+    font_draw(fi, screen_w-46, 10, 0x3f, "x "); font_draw(fi, 0x3f, game_sprites[0].x);
+    font_draw(fi, screen_w-46, 20, 0x3f, "y "); font_draw(fi, 0x3f, game_sprites[0].y);
+    if (net->is_running()) {
+      font_draw(fi, screen_w-46, 30, 0x3f, "x "); font_draw(fi, 0x3f, game_sprites[1].x);
+      font_draw(fi, screen_w-46, 40, 0x3f, "y "); font_draw(fi, 0x3f, game_sprites[1].y);
+    }
+  }
+
+  if (debug_level >= DEBUG_SHOW_NETWORK) {
+    if (net->is_running()) {
+      font_set_cursor(10, screen_h-20);
+      font_draw(fi, 0x3f, "Network enabled: ");
+      font_draw(fi, 0x3f, net->get_num_tx_packets());
+      font_draw(fi, 0x3f, ":");
+      font_draw(fi, 0x3f, net->get_num_tx_errors());
+    } else {
+      font_draw(fi, 10, screen_h-20, 0x3f, "Network disabled");
+    }
+  }
+  
+  if (debug_level >= DEBUG_SHOW_CONTROLLER) {
+    int len = strlen(joy->getName()) + 12;
+    font_set_cursor(screen_w-6*len-10, screen_h-20);
+    font_draw(fi, 0x3f, "Controller: ");
+    font_draw(fi, 0x3f, joy->getName());
+
+    char btns_pressed[11];
+    char *p = btns_pressed;
+    if (joy->cur & JOY_BTN_A    ) *p++ = 'A';
+    if (joy->cur & JOY_BTN_B    ) *p++ = 'B';
+    if (joy->cur & JOY_BTN_C    ) *p++ = 'C';
+    if (joy->cur & JOY_BTN_D    ) *p++ = 'D';
+    if (joy->cur & JOY_BTN_E    ) *p++ = 'E';
+    if (joy->cur & JOY_BTN_F    ) *p++ = 'F';
+    if (joy->cur & JOY_BTN_LEFT ) *p++ = '<';
+    if (joy->cur & JOY_BTN_RIGHT) *p++ = '>';
+    if (joy->cur & JOY_BTN_UP   ) *p++ = '^';
+    if (joy->cur & JOY_BTN_DOWN ) *p++ = 'v';
+    *p = '\0';
+    font_draw(fi, screen_w-70, screen_h-30, 0x3f, btns_pressed);
+  }
+}
+
 void GameScreen::clear(unsigned char color) {
   vga_clear_screen(color);
 }
 
 void GameScreen::show(int cur_millis) {
   FONT_INFO fi = { screen_w, screen_h, sync_bits, vga_get_framebuffer(), &font6x8 };
-  
+
   if (images_sbits_ok) {
     renderScreen();
   } else {
@@ -504,28 +584,8 @@ void GameScreen::show(int cur_millis) {
     font_draw(fi, 10, 60, 0x3f, (int) sync_bits);
   }
 
-  int fps = fpsCounter(cur_millis);
-  last_millis = cur_millis;
-
-  font_set_cursor(screen_w - 70, screen_h - 20);
-  font_draw(fi, 0x3f, fps);
-  font_draw(fi, 0x3f, " fps");
-
-  font_draw(fi, 10, screen_h-30, 0x3f, "x "); font_draw(fi, 0x3f, game_sprites[0].x);
-  font_draw(fi, 10, screen_h-20, 0x3f, "y "); font_draw(fi, 0x3f, game_sprites[0].y);
-
-  font_set_cursor(10, 10);
-  font_draw(fi, 0x3f, "Controller: ");
-  font_draw(fi, 0x3f, joy->getName());
-  if (net->is_running()) {
-    font_set_cursor(10, 20);
-    font_draw(fi, 0x3f, "Network enabled: ");
-    font_draw(fi, 0x3f, net->get_num_tx_packets());
-    font_draw(fi, 0x3f, ":");
-    font_draw(fi, 0x3f, net->get_num_tx_errors());
-  } else {
-    font_draw(fi, 10, 20, 0x3f, "Network disabled");
-  }
+  renderDebugInfo(fi, cur_millis);
   
+  frame_count++;
   vga_swap_buffers();
 }

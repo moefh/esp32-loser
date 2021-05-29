@@ -6,6 +6,7 @@
  * vga_6bit's freamebuffer.
  */
 
+#include "vga_font.h"
 #include "game_data.h"
 #include "game_network.h"
 #include "game_joy.h"
@@ -15,6 +16,9 @@ private:
   int last_millis = 0;
   int last_fps = 0;
   int fps_frame_count = 0;
+  unsigned int frame_count;
+  unsigned int last_btn_press_frame;  // for debouncing buttons
+  unsigned int debug_level;
   bool images_sbits_ok = false;
   unsigned char sync_bits;
   GameNetwork *net;
@@ -38,7 +42,8 @@ protected:
   void drawImageLineTr1(unsigned int *screen, const unsigned int *image, int image_width, bool skip_first_block);
   void drawImageLineTr2(unsigned int *screen, const unsigned int *image, int image_width, bool skip_first_block);
   void drawImageLineTr3(unsigned int *screen, const unsigned int *image, int image_width, bool skip_first_block);
-  
+
+  void renderDebugInfo(FONT_INFO &fi, int cur_millis);
   void renderScreen();
   void checkSprites();
   

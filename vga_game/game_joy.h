@@ -21,6 +21,8 @@
 #define JOY_BTN_UP    (1u<<8)
 #define JOY_BTN_DOWN  (1u<<9)
 
+#define JOY_BTN_PRESSED(joy, btn)  (((joy)->cur & (btn)) && ! ((joy)->last & (btn)))
+
 class GameJoy {
 public:
   uint32_t cur;

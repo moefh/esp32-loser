@@ -6,9 +6,8 @@
 #define GAME_NETWORK_MESSAGE_MAGIC1 0x1234
 #define GAME_NETWORK_MESSAGE_MAGIC2 0x5678
 
-void GameNetwork::init(SPRITE *local, SPRITE *remote)
+void GameNetwork::init()
 {
-  printf("-> initializing network\n");
   if (net_init() != 0) {
     printf("Error initializing network\n");
     running = false;
@@ -18,8 +17,8 @@ void GameNetwork::init(SPRITE *local, SPRITE *remote)
   tx_errors = 0;
   tx_packets = 0;
 
-  local_spr = local;
-  remote_spr = remote;
+  local_spr  = &game_sprites[0];
+  remote_spr = &game_sprites[1];
 }
 
 void GameNetwork::step()
