@@ -16,6 +16,8 @@ struct INFO {
   unsigned int num_frames;
   unsigned int num_tiles_x;
   unsigned int num_tiles_y;
+  int dont_scramble_for_esp32;
+  int dont_output_crlf;
 };
 
 struct IMAGE_READER {
@@ -69,13 +71,15 @@ static int conv_file(struct INFO *info)
     width += 4 - width % 4;
   }
 
-  printf("%s -> %s (name=%s, sync_bits=0x%02x, num_frames=%d)\r\n", info->in_filename, info->out_filename, info->var_name, info->sync_bits, info->num_frames);
+  const char *line_end = (info->dont_output_crlf) ? "\n" : "\r\n";
+  
+  printf("%s -> %s (name=%s, sync_bits=0x%02x, num_frames=%d)%s\n", info->in_filename, info->out_filename, info->var_name, info->sync_bits, info->num_frames, line_end);
 
-  fprintf(out, "/* File generated automatically from %s */\r\n\r\n", info->in_filename);
-  fprintf(out, "const int img_%s_width   = %d;\r\n", info->var_name, reader.w);
-  fprintf(out, "const int img_%s_height  = %d;\r\n", info->var_name, reader.h);
-  fprintf(out, "const int img_%s_stride  = %d;\r\n", info->var_name, width/4);
-  fprintf(out, "const int img_%s_num_spr = %d;\r\n\r\n", info->var_name, info->num_frames);
+  fprintf(out, "/* File generated automatically from %s */%s%s\n", info->in_filename, line_end, line_end);
+  fprintf(out, "#define img_%s_width   %d%s\n", info->var_name, reader.w, line_end);
+  fprintf(out, "#define img_%s_height  %d%s\n", info->var_name, reader.h, line_end);
+  fprintf(out, "#define img_%s_stride  %d%s\n", info->var_name, width/4, line_end);
+  fprintf(out, "#define img_%s_num_spr %d%s%s\n", info->var_name, info->num_frames, line_end, line_end);
 
   fprintf(out, "const unsigned int img_%s_data[] = {", info->var_name);
   int num_out = 0;
@@ -99,19 +103,27 @@ static int conv_file(struct INFO *info)
                                                ((unsigned int)line[bpp*x+2] << 16) |
                                                ((unsigned int)line[bpp*x+3] << 24));
           }
-          unsigned int v = ((conv_pixel(info->sync_bits, pixels[0])<<16) |
-                            (conv_pixel(info->sync_bits, pixels[1])<<24) |
-                            (conv_pixel(info->sync_bits, pixels[2])<< 0) |
-                            (conv_pixel(info->sync_bits, pixels[3])<< 8));
+          unsigned int v;
+          if (info->dont_scramble_for_esp32) {
+            v = ((conv_pixel(info->sync_bits, pixels[0])<< 0) |
+                 (conv_pixel(info->sync_bits, pixels[1])<< 8) |
+                 (conv_pixel(info->sync_bits, pixels[2])<<16) |
+                 (conv_pixel(info->sync_bits, pixels[3])<<24));
+          } else {
+            v = ((conv_pixel(info->sync_bits, pixels[0])<<16) |
+                 (conv_pixel(info->sync_bits, pixels[1])<<24) |
+                 (conv_pixel(info->sync_bits, pixels[2])<< 0) |
+                 (conv_pixel(info->sync_bits, pixels[3])<< 8));
+          }
           if (num_out++ % 8 == 0) {
-            fprintf(out, "\r\n  ");
+            fprintf(out, "%s  ", line_end);
           }
           fprintf(out, "0x%08xu,", v);
         }
       }
     }
   }
-  fprintf(out, "\r\n};\r\n");
+  fprintf(out, "%s};%s\n", line_end, line_end);
   
   fclose(out);
   bmp_free(reader.bmp);
@@ -128,6 +140,7 @@ static void print_help(const char *progname)
   printf("   -name NAME      set C variable name (default: based on input file)\n");
   printf("   -sync BITS      set sync bits (default: 0x3c)\n");
   printf("   -frames N       set maximum num frames to convert (defaut: 0=unlimited)\n");
+  printf("   -noscramble     don't scramble image as required by ESP32 I2S\n");
 }
 
 static int parse_sync_bits(struct INFO *info, const char *str)
@@ -254,9 +267,12 @@ static int parse_args(struct INFO *info, int argc, char *argv[])
   info->sync_bits = 0;
   info->num_tiles_x = 1;
   info->num_tiles_y = 1;
+  info->num_frames = 0;
+  info->dont_scramble_for_esp32 = 0;
+  info->dont_output_crlf = 0;
   for (int i = 1; i < argc; i++) {
     if (argv[i][0] == '-') {
-      if (strcmp(argv[1], "-h") == 0) {
+      if (strcmp(argv[i], "-h") == 0) {
         print_help(argv[0]);
         exit(0);
       } else if (strcmp(argv[i], "-out") == 0) {
@@ -303,8 +319,13 @@ static int parse_args(struct INFO *info, int argc, char *argv[])
         if (parse_num_frames(info, argv[++i]) != 0) {
           return 1;
         }
+      } else if (strcmp(argv[i], "-no-scramble") == 0) {
+        info->dont_scramble_for_esp32 = 1;
+      } else if (strcmp(argv[i], "-no-crlf") == 0) {
+        info->dont_output_crlf = 1;
       } else {
         printf("%s: unknown option: '%s'\n", info->progname, argv[i]);
+        return 1;
       }
     } else {
       if (info->in_filename != NULL) {
@@ -315,6 +336,11 @@ static int parse_args(struct INFO *info, int argc, char *argv[])
     }
   }
 
+  if (! info->in_filename) {
+    printf("%s: no input file!\n", argv[0]);
+    return 1;
+  }
+  
   if (info->out_filename[0] == '\0') {
     if (make_default_out_filename(info, "spr_", ".h") != 0) {
       printf("%s: input filename too long\n", info->progname);
