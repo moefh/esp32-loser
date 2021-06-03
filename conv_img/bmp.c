@@ -105,11 +105,11 @@ struct BMP_IMAGE *bmp_read(const char *filename, int color_format)
     if (dib_size < 52) goto error;
     if (f_set_pos(f, 0x36) < 0) goto error;
     int64_t mask;
-    if ((mask = f_read_u32(f)) < 0) goto error; component_shift_r = get_shift_for_mask(mask);
-    if ((mask = f_read_u32(f)) < 0) goto error; component_shift_g = get_shift_for_mask(mask);
-    if ((mask = f_read_u32(f)) < 0) goto error; component_shift_b = get_shift_for_mask(mask);
+    if ((mask = f_read_u32(f)) < 0) { goto error; }   component_shift_r = get_shift_for_mask(mask);
+    if ((mask = f_read_u32(f)) < 0) { goto error; }   component_shift_g = get_shift_for_mask(mask);
+    if ((mask = f_read_u32(f)) < 0) { goto error; }   component_shift_b = get_shift_for_mask(mask);
     if (dib_size >= 56) {
-      if ((mask = f_read_u32(f)) < 0) goto error; component_shift_a = get_shift_for_mask(mask);
+      if ((mask = f_read_u32(f)) < 0) { goto error; } component_shift_a = get_shift_for_mask(mask);
     }
   }
 
